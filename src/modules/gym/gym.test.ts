@@ -215,6 +215,13 @@ describe('Instruktioner och figurer', () => {
     }
   });
 
+  it('negativ eller ogiltig fas kraschar inte (animationens första bildruta)', () => {
+    for (const a of Object.values(ANIMS)) for (const ph of [-0.001, -0.5, 1, 1.2, NaN]) {
+      const { i, j } = frameAt(a, ph);
+      expect(a.frames[i] && a.frames[j]).toBeTruthy();
+    }
+  });
+
   it('alla figurer går att rita i varje läge och håller sig i bild', () => {
     for (const [k, a] of Object.entries(ANIMS)) {
       for (let ph = 0; ph < 1; ph += 0.05) {

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { Component, useEffect, useState, type ReactNode } from 'react';
 import { ANIMS } from './poses';
 import { FLOOR, HEAD_R, first, placed, type Anim, type P, type Pose } from './skeleton';
 import { color, type Kind } from './kit';
@@ -9,8 +9,10 @@ export function frameAt(a: Anim, phase: number): { i: number; j: number; t: numb
   if (n < 2) return { i: 0, j: 0, t: 0 };
   const order = a.loop ? (a.reset ? [...Array(n).keys()] : [...Array(n).keys(), 0]) : [...Array(n).keys(), ...[...Array(n - 1).keys()].reverse()];
   const segs = order.length - 1;
-  const x = phase * segs;
-  const k = Math.min(segs - 1, Math.floor(x));
+  // Guard: animation frame timestamps can be slightly earlier than the start time (negative phase).
+  const p = Number.isFinite(phase) ? ((phase % 1) + 1) % 1 : 0;
+  const x = p * segs;
+  const k = Math.max(0, Math.min(segs - 1, Math.floor(x)));
   const local = x - k;
   const hold = a.hold ?? 0.25;
   const u = Math.min(1, Math.max(0, (local - hold / 2) / (1 - hold)));
@@ -19,10 +21,22 @@ export function frameAt(a: Anim, phase: number): { i: number; j: number; t: numb
 
 export const cycleMs = (a: Anim) => (a.frames.length < 2 ? 0 : (a.loop ? a.frames.length - (a.reset ? 1 : 0) : 2 * (a.frames.length - 1)) * (a.ms ?? 1300));
 
+type FigureProps = { anim?: string; kind: Kind; label: string; size?: 'lg' | 'sm'; onPillar?: boolean; phase?: number };
+
+/** A drawing problem must never take the whole page down: show an empty box instead. */
+class Safe extends Component<{ children: ReactNode; reset: string }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidUpdate(prev: { reset: string }) { if (prev.reset !== this.props.reset && this.state.failed) this.setState({ failed: false }); }
+  render() { return this.state.failed ? null : this.props.children; }
+}
+
 /** Animated stick figure showing a movement. Static (first frame) when the user prefers reduced motion. */
-export function Figure({ anim = 'stand', kind, label, size = 'lg', onPillar, phase }: {
-  anim?: string; kind: Kind; label: string; size?: 'lg' | 'sm'; onPillar?: boolean; phase?: number;
-}) {
+export function Figure(props: FigureProps) {
+  return <Safe reset={props.anim ?? ''}><FigureInner {...props} /></Safe>;
+}
+
+function FigureInner({ anim = 'stand', kind, label, size = 'lg', onPillar, phase }: FigureProps) {
   const A = ANIMS[anim] ?? ANIMS.stand;
   const [ph, setPh] = useState(0);
 
@@ -32,7 +46,7 @@ export function Figure({ anim = 'stand', kind, label, size = 'lg', onPillar, pha
     if (!total || matchMedia('(prefers-reduced-motion: reduce)').matches) { setPh(0); return; }
     let raf = 0;
     const start = performance.now();
-    const tick = (now: number) => { setPh(((now - start) % total) / total); raf = requestAnimationFrame(tick); };
+    const tick = (now: number) => { setPh((Math.max(0, now - start) % total) / total); raf = requestAnimationFrame(tick); };
     raf = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(raf);
   }, [A, phase]);
