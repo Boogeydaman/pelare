@@ -5,6 +5,8 @@ const config: CapacitorConfig = {
   appName: 'Pelare',
   webDir: 'dist',
   backgroundColor: '#f3efe6',
+  // Keeps GPS updates flowing when a run lasts longer than 5 minutes with the screen off (background-geolocation).
+  android: { useLegacyBridge: true },
 };
 
 export default config;

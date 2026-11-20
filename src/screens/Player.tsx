@@ -6,7 +6,7 @@ import { saveSession, setActive, uid, useActive } from '../core/db';
 import { fmtClock } from '../core/format';
 import type { Feel, LogData, SessionLog } from '../core/types';
 import { MODULE, MODULE_LIST } from '../modules/registry';
-import { Dim, ON, OnButton } from '../shared/player/parts';
+import { Dim, ON, OnButton, useHold } from '../shared/player/parts';
 import { useTick, useWakeLock } from '../shared/ui/hooks';
 import { Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -17,6 +17,8 @@ export function PlayerPage() {
   const [confirm, setConfirm] = useState(false);
   const [progress, setProgress] = useState(0);
   useWakeLock();
+  // During a run the close button also needs a press-and-hold, like the other controls.
+  const close = useHold(() => setConfirm(true), active?.plan.module === 'run');
 
   const finish = useCallback(async (result?: LogData) => {
     if (!active) return;
@@ -33,7 +35,7 @@ export function PlayerPage() {
     <div className="fixed inset-0 flex flex-col overflow-y-auto" style={{ background: color(plan.module), color: ON }}>
       <div className="safe-top safe-bottom mx-auto flex w-full max-w-lg flex-1 flex-col px-6">
         <header className="flex items-center justify-between py-2">
-          <button onClick={() => setConfirm(true)} aria-label="Avsluta passet" className="-m-2 flex h-12 w-12 items-center justify-center"><X size={24} strokeWidth={1.75} /></button>
+          <button {...close.handlers} aria-label="Avsluta passet" className="relative -m-2 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full" style={close.progress ? { background: `rgb(var(--onpillar) / ${0.1 + close.progress * 0.3})` } : undefined}><X size={24} strokeWidth={1.75} /></button>
           <div className="text-[15px] font-medium">{plan.title}</div>
           <Elapsed since={active.startedAt} />
         </header>
@@ -73,6 +75,10 @@ export function DonePage() {
   const nav = useNavigate();
   const [feel, setFeel] = useState<Feel>(2);
   const [km, setKm] = useState('');
+  // GPS distance from the run player, ready to adjust.
+  useEffect(() => {
+    if (active?.result?.kind === 'run' && active.result.distanceKm) setKm(String(active.result.distanceKm).replace('.', ','));
+  }, [active?.result]);
 
   const log = useMemo<SessionLog | null>(() => {
     if (!active) return null;
@@ -132,7 +138,7 @@ export function DonePage() {
         </div>
         {log.module === 'run' && (
           <label className="rise mt-6 flex items-center justify-between gap-4 border-t border-rule pt-4" style={{ animationDelay: '280ms' }}>
-            <span className="text-[16px]">Distans (valfritt)</span>
+            <span className="text-[16px]">{active.result?.kind === 'run' && active.result.distanceKm ? 'Distans (GPS)' : 'Distans (valfritt)'}</span>
             <span className="flex items-baseline gap-2">
               <input value={km} onChange={(e) => setKm(e.target.value)} inputMode="decimal" aria-label="Distans i km"
                 className="num h-12 w-24 rounded-xl bg-ink/[0.06] px-3 text-right text-[20px] font-semibold outline-none focus:ring-2 focus:ring-ink" />
