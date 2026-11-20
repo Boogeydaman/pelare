@@ -2,6 +2,8 @@
 
 Gym, löpning och rörlighet – tre program, en plan.
 
+**Appen:** https://boogeydaman.github.io/pelare/ – öppna länken i Chrome på Android, tryck på ⋮ och välj **Installera app**. Varje push till `main` publiceras automatiskt.
+
 - [docs/PLAN.md](docs/PLAN.md) – arkitektur, moduler och byggordning (fas A–F)
 - [docs/KONCEPT.md](docs/KONCEPT.md) – designspråket
 - [docs/SPEC.md](docs/SPEC.md) – ursprunglig specifikation med forskningsunderlag
@@ -11,7 +13,8 @@ Gym, löpning och rörlighet – tre program, en plan.
 - **Fas B (gym): huvuddelen klar.** 74 övningar med kroppsviktsstegar, sex program, dubbelprogression, veckovolym per muskel och anpassning efter plats. Underlaget finns i [docs/kunskap/gym-transkript.md](docs/kunskap/gym-transkript.md).
 - **Fas D (rörlighet): huvuddelen klar.** 44 stretchar och djurrörelser, rutinerna Hela kroppen 10 min, Snabbstretch och Djurrörelser, samt målprogram som bygger upp till 3 varv. Underlaget finns i [docs/kunskap/stretch-transkript.md](docs/kunskap/stretch-transkript.md).
 - **Kunskap:** 8 artiklar om filosofin bakom träningen (`/las`), med källor och evidensnivå, plus avsnittet ”Därför i dag” på Idag. Källorna finns i `src/core/sources.ts`.
-- **Kvar:** Löpning (fas C) har exempelinnehåll, och coachen (fas E) har en enkel viktning.
+- **Fas C (löpning): huvuddelen klar.** Gå-spring i 11 steg, skadevakt, 80/20, intervaller, långpass och tester.
+- **Kvar:** Coachen (fas E) har en enkel viktning.
 
 ## Kom igång
 ```bash
