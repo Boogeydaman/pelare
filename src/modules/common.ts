@@ -43,11 +43,28 @@ export const runProgramId = (profile: Profile) => profile.enrollments.run?.progr
 /** Distance programs (first 10/15/20 km) need at least three runs a week to work. */
 export const isDistanceProgram = (id: string) => id === '10k' || id === '15k' || id === '20k';
 
-export function weeklySplit(profile: Profile, gymPerWeek: number, runPerWeek: number): { gym: number; run: number } {
+/** Runs a week in each running program (the distance programs vary a little by week). */
+export const RUN_PER_WEEK: Record<string, number> = { start: 3, '5k': 3, '10k': 3, '15k': 4, '20k': 4, maintain: 2 };
+export const runsPerWeekOf = (profile: Profile) => RUN_PER_WEEK[runProgramId(profile)] ?? 3;
+
+/** Gym sessions a week: the user's own choice. Older profiles without it get what their total used to give. */
+export function gymDaysOf(profile: Profile): number {
+  if (profile.gymDays !== undefined) return profile.gymDays;
   const D = profile.daysPerWeek;
-  const run = isDistanceProgram(runProgramId(profile))
-    ? Math.min(runPerWeek, Math.max(3, D - 1))
-    : Math.max(1, Math.min(runPerWeek, Math.floor(D / 2)));
-  const gym = Math.max(2, Math.min(gymPerWeek, D - run));
-  return { gym, run };
+  return Math.max(2, Math.min(4, D - Math.max(1, Math.min(3, Math.floor(D / 2)))));
+}
+
+/** Matching gym program for a number of gym days (gym), or the home program. */
+export function gymProgramFor(days: number, places: Profile['places'], equip: Profile['homeEquipment']): string {
+  if (!places.includes('gym')) return equip.includes('dumbbell') ? 'home_db' : 'bodyweight';
+  return days <= 2 ? 'minimal' : days >= 4 ? 'upperlower' : 'fullbody';
+}
+
+/**
+ * Weekly targets: gym = the user's gym days, running = what the running program asks for.
+ * The total (shown in Settings) is simply the sum – choosing a longer running program adds running days
+ * instead of taking them from the gym.
+ */
+export function weeklySplit(profile: Profile, _gymPerWeek: number, runPerWeek: number): { gym: number; run: number } {
+  return { gym: gymDaysOf(profile), run: runPerWeek };
 }

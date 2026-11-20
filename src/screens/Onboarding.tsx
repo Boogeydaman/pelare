@@ -4,6 +4,7 @@ import { saveProfile } from '../core/db';
 import { useNavigate } from 'react-router-dom';
 import type { Equip, Goals, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
 import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
+import { RUN_PER_WEEK, gymProgramFor } from '../modules/common';
 import { InstallCard } from '../shared/ui/InstallCard';
 import { IconButton, Kicker, OptionList, Primary, color } from '../shared/ui/kit';
 
@@ -45,7 +46,7 @@ export function Onboarding() {
   const [i, setI] = useState(0);
   const [goals, setGoals] = useState<Goals>({ gym: 'stronger', run: 'start', mobility: 'front_split' });
   const [focus, setFocus] = useState<MobilityFocus[]>([]);
-  const [days, setDays] = useState(4);
+  const [gymDays, setGymDays] = useState(2);
   const [places, setPlaces] = useState<Place[]>(['gym']);
   const [equip, setEquip] = useState<Equip[]>([]);
   const [health, setHealth] = useState(HEALTH.map(() => false));
@@ -55,10 +56,10 @@ export function Onboarding() {
 
   const finish = async () => {
     const now = new Date().toISOString();
-    const gymProgram = !places.includes('gym') ? (equip.includes('dumbbell') ? 'home_db' : 'bodyweight') : days <= 2 ? 'minimal' : 'fullbody';
+    const gymProgram = gymProgramFor(gymDays, places, equip);
     const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
     const profile: Profile = {
-      goals: { ...goals, mobility: legacy }, daysPerWeek: days, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
+      goals: { ...goals, mobility: legacy }, daysPerWeek: gymDays + (RUN_PER_WEEK[goals.run] ?? 3), gymDays, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
       enrollments: {
         gym: { programId: gymProgram, startedAt: now },
         run: { programId: goals.run, startedAt: now },
@@ -112,13 +113,17 @@ export function Onboarding() {
           </Q>
         )}
         {step === 'days' && (
-          <Q title="Hur många dagar i veckan vill du träna?">
-            <div className="flex items-baseline justify-center gap-3 py-6">
-              <span className="num font-serif text-[120px] leading-none">{days}</span><span className="text-xl text-ink2">dagar</span>
-            </div>
-            <input type="range" min={2} max={6} value={days} onChange={(e) => setDays(Number(e.target.value))} aria-label="Dagar per vecka" className="w-full accent-[rgb(var(--ink))]" />
-            <div className="num mt-2 flex justify-between text-[13px] text-ink2"><span>2</span><span>6</span></div>
-            <p className="mt-6 text-ink2">Korta stretchpass räknas inte – de kan göras de flesta dagar.</p>
+          <Q kicker="Gym" kind="gym" title="Hur många gympass i veckan?">
+            <OptionList value={gymDays} onChange={setGymDays} options={[
+              { value: 1, label: '1 pass', hint: 'Bättre än inget – men två ger mer' },
+              { value: 2, label: '2 pass', hint: 'Minsta effektiva dosen, och WHO:s rekommendation' },
+              { value: 3, label: '3 pass', hint: 'Helkropp tre gånger i veckan' },
+              { value: 4, label: '4 pass', hint: 'Över- och underkropp varannan gång' },
+            ]} />
+            <p className="mt-6 text-[16px] leading-snug text-ink2">
+              Löpningen följer ditt löpprogram: <span className="font-medium text-ink">{RUN_PER_WEEK[goals.run] ?? 3} pass i veckan</span>.
+              Totalt blir det <span className="font-medium text-ink">{gymDays + (RUN_PER_WEEK[goals.run] ?? 3)} pass i veckan</span>. Korta stretchpass räknas inte – de görs de flesta dagar.
+            </p>
           </Q>
         )}
         {step === 'place' && (

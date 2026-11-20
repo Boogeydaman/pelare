@@ -10,6 +10,7 @@ import { Page, Row, Section } from '../shared/layout/page';
 import { InstallCard } from '../shared/ui/InstallCard';
 import { OptionList, Primary, Segmented, Sheet } from '../shared/ui/kit';
 import { GOAL_OPTIONS } from './Onboarding';
+import { gymDaysOf, gymProgramFor, runsPerWeekOf } from '../modules/common';
 import { WEEKDAYS } from '../core/week';
 
 type Edit = keyof Goals | 'days' | 'weekdays' | 'places' | 'equipment' | 'reset' | null;
@@ -48,7 +49,9 @@ export function Settings() {
         </Section>
 
         <Section title="Träning">
-          <Row title="Dagar per vecka" right={String(p.daysPerWeek)} onClick={() => setEdit('days')} />
+          <Row kind="gym" title="Gympass per vecka" right={String(gymDaysOf(p))} onClick={() => setEdit('days')} />
+          <Row kind="run" title="Löppass per vecka" right={`${runsPerWeekOf(p)} (löpprogrammet)`} to="/lopning/program" />
+          <p className="border-t border-rule py-3 text-[14px] text-ink2">Totalt {gymDaysOf(p) + runsPerWeekOf(p)} pass i veckan. Byter du löpprogram följer antalet löppass med, och gympassen ligger kvar.</p>
           <Row title="Träningsdagar" right={p.trainingDays?.length ? [...p.trainingDays].sort().map((d) => WEEKDAYS[d]).join(', ') : 'Automatiskt'} onClick={() => setEdit('weekdays')} />
           <Row title="Var du tränar" right={p.places.map((x) => (x === 'gym' ? 'Gym' : 'Hemma')).join(', ')} onClick={() => setEdit('places')} />
           {p.places.includes('home') && <Row title="Utrustning hemma" right={p.homeEquipment.length ? `${p.homeEquipment.length} saker` : 'Ingen'} onClick={() => setEdit('equipment')} />}
@@ -88,13 +91,23 @@ export function Settings() {
             <OptionList value={p.goals[id]} options={GOAL_OPTIONS[id]} onChange={(v) => {
               // A new running goal starts that program from week 1.
               const enrollments = id === 'run' && v !== p.goals.run ? { ...p.enrollments, run: { programId: v as string, startedAt: new Date().toISOString() } } : p.enrollments;
-              save({ goals: { ...p.goals, [id]: v } as Goals, enrollments }); setEdit(null);
+              const next = { ...p, goals: { ...p.goals, [id]: v } as Goals, enrollments };
+              save({ goals: next.goals, enrollments, daysPerWeek: gymDaysOf(next) + runsPerWeekOf(next) }); setEdit(null);
             }} />
           </div>
         </Sheet>
       ))}
-      <Sheet open={edit === 'days'} onClose={() => setEdit(null)} title="Dagar per vecka">
-        <div className="pb-4"><OptionList value={p.daysPerWeek} options={[2, 3, 4, 5, 6].map((d) => ({ value: d, label: `${d} dagar` }))} onChange={(v) => { save({ daysPerWeek: v }); setEdit(null); }} /></div>
+      <Sheet open={edit === 'days'} onClose={() => setEdit(null)} title="Gympass per vecka">
+        <div className="pb-4">
+          <OptionList value={gymDaysOf(p)} options={[1, 2, 3, 4].map((d) => ({ value: d, label: `${d} pass`, hint: d === 1 ? 'Två ger mer – det är WHO:s rekommendation' : d === 2 ? 'Minimalist' : d === 3 ? 'Helkropp' : 'Över/under' }))}
+            onChange={(v) => {
+              // Switch to the matching gym program when the number of days changes.
+              const prog = gymProgramFor(v, p.places, p.homeEquipment);
+              const enrollments = prog !== p.enrollments.gym?.programId && p.places.includes('gym') ? { ...p.enrollments, gym: { programId: prog, startedAt: new Date().toISOString() } } : p.enrollments;
+              save({ gymDays: v, daysPerWeek: v + runsPerWeekOf(p), enrollments }); setEdit(null);
+            }} />
+          <p className="mt-3 text-[13px] text-ink2">Gymprogrammet byts till det som passar antalet pass. Löpningen påverkas inte.</p>
+        </div>
       </Sheet>
       <Sheet open={edit === 'weekdays'} onClose={() => setEdit(null)} title="Träningsdagar">
         <div className="pb-4">
@@ -108,7 +121,7 @@ export function Settings() {
               );
             })}
           </div>
-          <p className="mt-3 text-[13px] text-ink2">{p.trainingDays?.length ? `${p.trainingDays.length} dagar valda. Du har ${p.daysPerWeek} träningsdagar i veckan.` : 'Automatiskt'}</p>
+          <p className="mt-3 text-[13px] text-ink2">{p.trainingDays?.length ? `${p.trainingDays.length} dagar valda. Du har ${gymDaysOf(p) + runsPerWeekOf(p)} pass i veckan.` : 'Automatiskt'}</p>
           <div className="mt-4 flex gap-3">
             {!!p.trainingDays?.length && <button onClick={() => save({ trainingDays: [] })} className="h-12 flex-1 rounded-full bg-ink/[0.06] text-[15px] font-medium">Rensa</button>}
             <div className="flex-1"><Primary onClick={() => setEdit(null)}>Klar</Primary></div>

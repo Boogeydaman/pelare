@@ -2,7 +2,7 @@ import { Dumbbell } from 'lucide-react';
 import { createElement } from 'react';
 import type { LibraryItem, Metric, SessionLog } from '../../core/types';
 import { QuickLog } from '../../shared/ui/fields';
-import { fmt1, logsOf, thisWeek, weeklySeries, weeklySplit } from '../common';
+import { fmt1, gymDaysOf, logsOf, thisWeek, weeklySeries } from '../common';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { EX, EXERCISES, GROUPS, MUSCLES, MUSCLE_NAME, type Exercise, type Need } from './exercises';
 import { PROGRAMS, PROGRAM_BY_ID } from './programs';
@@ -36,7 +36,7 @@ function nextSession(ctx: ModuleCtx) {
   const program = programOf(ctx.profile);
   const { tpl } = nextTemplate(ctx, program);
   const done = thisWeek(ctx, 'gym').length;
-  const target = weeklySplit(ctx.profile, program.perWeek, 3).gym;
+  const target = gymDaysOf(ctx.profile);
   return build(ctx, tpl, {
     reasons: [done < target ? `Pass ${done + 1} av ${target} den här veckan i ${program.name}.` : `Veckans ${target} pass är gjorda – det här är extra i ${program.name}.`],
   });
@@ -73,7 +73,7 @@ export const gym: TrainingModule = {
     { id: 'bw', label: 'Kort hemmapass', hint: '20 min · 40 s arbete, 20 s vila', session: build({ ...ctx, checkin: { ...ctx.checkin, place: 'travel' } }, PROGRAM_BY_ID.home20.sessions[0]) },
     { id: 'log', label: 'Logga i efterhand', hint: 'Ett pass du redan har gjort', to: '/gym/logga' },
   ],
-  weekly: (ctx) => ({ done: thisWeek(ctx, 'gym').length, target: weeklySplit(ctx.profile, programOf(ctx.profile).perWeek, 3).gym, unit: 'pass' }),
+  weekly: (ctx) => ({ done: thisWeek(ctx, 'gym').length, target: gymDaysOf(ctx.profile), unit: 'pass' }),
 
   programs: PROGRAMS,
   program(ctx) {
@@ -85,7 +85,7 @@ export const gym: TrainingModule = {
     const first = index - Math.min(done, index);
     return {
       program, week, label: `Vecka ${week} av ${program.weeks}`,
-      thisWeek: Array.from({ length: program.perWeek }, (_, i) => ({ title: program.sessions[(first + i) % program.sessions.length].title, done: i < done })),
+      thisWeek: Array.from({ length: gymDaysOf(ctx.profile) }, (_, i) => ({ title: program.sessions[(first + i) % program.sessions.length].title, done: i < done })),
       milestones: Array.from({ length: program.weeks }, (_, i) => ({ label: `V${i + 1}`, done: i + 1 < week })),
     };
   },

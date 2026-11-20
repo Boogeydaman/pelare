@@ -43,7 +43,8 @@ describe('Din vecka', () => {
 
   it('lite tid kvar → "gör det i dag"', () => {
     // Friday, nothing done: more sessions left than days after today.
-    const p = plan(ctx(at('2026-11-20T08:00:00'), [], profile({ daysPerWeek: 3 }))); // 2 gym + 1 run on Fri–Sun
+    const base = profile();
+    const p = plan(ctx(at('2026-11-20T08:00:00'), [], profile({ gymDays: 1, enrollments: { ...base.enrollments, run: { programId: 'maintain', startedAt: base.createdAt } } }))); // 1 gym + 2 runs on Fri–Sun
     expect(p.tone).toBe('tight');
     expect(p.message).toMatch(/i dag/);
     expect(p.days.find((d) => d.today)!.planned).toHaveLength(1);
@@ -65,7 +66,7 @@ describe('Din vecka', () => {
   });
 
   it('valda träningsdagar används när de räcker', () => {
-    const p = plan(ctx(at('2026-11-16T08:00:00'), [], profile({ trainingDays: [1, 3, 5, 6] })));
+    const p = plan(ctx(at('2026-11-16T08:00:00'), [], profile({ gymDays: 1, trainingDays: [1, 3, 5, 6] })));
     for (const d of p.days.filter((x) => !x.today && x.planned.length)) expect([1, 3, 5, 6]).toContain(d.index);
   });
 

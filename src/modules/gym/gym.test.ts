@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { ExerciseResult, Feel, Profile, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
 import { EX, EXERCISES, type Muscle } from './exercises';
-import { weeklySplit } from '../common';
+import { gymProgramFor, weeklySplit } from '../common';
 import { build, equipmentAt, nextTemplate, resolve, target, volume, weeklyTarget } from './planner';
 import { PROGRAMS } from './programs';
 import { gymRecords } from './progress';
@@ -188,13 +188,18 @@ describe('På resa och veckans fördelning', () => {
     expect(nextTemplate(ctx({ logs: [logged] }), PROGRAMS[0]).tpl.type).not.toBe(tpl.type);
   });
 
-  it('gym och löpning ryms i dina träningsdagar och gym är alltid minst två', () => {
-    for (const d of [2, 3, 4, 5, 6]) {
-      const { gym, run } = weeklySplit(profile({ daysPerWeek: d }), 4, 3);
-      expect(gym, `${d} dagar`).toBeGreaterThanOrEqual(2);
-      expect(run, `${d} dagar`).toBeGreaterThanOrEqual(1);
-      if (d >= 3) expect(gym + run, `${d} dagar`).toBeLessThanOrEqual(d);
+  it('gympass är ditt eget val och löppassen följer löpprogrammet', () => {
+    for (const gymDays of [1, 2, 3, 4]) {
+      const { gym, run } = weeklySplit(profile({ gymDays }), 4, 4);
+      expect(gym).toBe(gymDays);
+      expect(run).toBe(4);
     }
+    // Older profiles without a gym choice still get at least two gym sessions.
+    for (const d of [2, 3, 4, 5, 6]) expect(weeklySplit(profile({ daysPerWeek: d }), 4, 3).gym, `${d} dagar`).toBeGreaterThanOrEqual(2);
+    expect(gymProgramFor(2, ['gym'], [])).toBe('minimal');
+    expect(gymProgramFor(3, ['gym'], [])).toBe('fullbody');
+    expect(gymProgramFor(4, ['gym'], [])).toBe('upperlower');
+    expect(gymProgramFor(3, ['home'], ['dumbbell'])).toBe('home_db');
   });
 });
 

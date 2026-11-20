@@ -25,7 +25,9 @@ export interface Enrollment { programId: string; startedAt: string }
 
 export interface Profile {
   goals: Goals;
-  daysPerWeek: number;
+  daysPerWeek: number; // total sessions a week (gym + running), kept in step with gymDays and the running program
+  /** Gym sessions a week, chosen by the user. Running follows the running program. */
+  gymDays?: number;
   places: Place[];
   homeEquipment: Equip[];
   enrollments: Record<ModuleId, Enrollment>;

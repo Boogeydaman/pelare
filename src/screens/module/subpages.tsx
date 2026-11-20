@@ -10,6 +10,7 @@ import { Empty, Page, Row, Section, Stat } from '../../shared/layout/page';
 import { Figure } from '../../shared/ui/Figure';
 import { Field, NumberInput, parseNum } from '../../shared/ui/fields';
 import { Primary, Sheet, color } from '../../shared/ui/kit';
+import { gymDaysOf, runsPerWeekOf } from '../../modules/common';
 
 // ---------------------------------------------------------------- Program
 
@@ -21,13 +22,17 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
   const choose = (programId: string) => {
     if (programId === current) return;
     const goals = m.id === 'run' && ['start', '5k', '10k', '15k', '20k'].includes(programId) ? { ...ctx.profile.goals, run: programId as typeof ctx.profile.goals.run } : ctx.profile.goals;
-    saveProfile({ ...ctx.profile, goals, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } });
+    const next = { ...ctx.profile, goals, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } };
+    // Picking a gym program also sets the number of gym sessions to what it is built for.
+    const perWeek = m.programs.find((x) => x.id === programId)?.perWeek;
+    if (m.id === 'gym' && perWeek) next.gymDays = perWeek;
+    saveProfile({ ...next, daysPerWeek: gymDaysOf(next) + runsPerWeekOf(next) });
   };
 
   return (
     <Page kicker={m.name} kind={m.id} title={view.program.name} back={`/${m.slug}`}>
       <p className="text-[17px] leading-snug text-ink2">{view.program.description}</p>
-      <div className="num mt-3 text-[15px]">{view.label} · {view.program.perWeek} {m.id === 'mobility' ? 'dagar' : 'pass'} i veckan</div>
+      <div className="num mt-3 text-[15px]">{view.label} · {m.id === 'gym' ? gymDaysOf(ctx.profile) : view.program.perWeek} {m.id === 'mobility' ? 'dagar' : 'pass'} i veckan</div>
       {m.ProgramExtra && <m.ProgramExtra />}
 
       <Section title="Den här veckan">
@@ -55,7 +60,7 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
             <span>
               <span className="block text-[17px] font-medium">{p.name}</span>
               <span className="block text-[14px] text-ink2">{p.description}</span>
-              <span className="num block text-[13px] text-ink2">{p.weeks} veckor · {p.perWeek} pass/vecka</span>
+              <span className="num block text-[13px] text-ink2">{p.weeks} veckor{m.id === 'gym' ? '' : ` · ${p.perWeek} pass/vecka`}</span>
             </span>
             <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2" style={p.id === current ? { background: color(m.id), borderColor: color(m.id) } : { borderColor: 'rgb(var(--rule))' }}>
               {p.id === current && <Check size={14} strokeWidth={3} color="rgb(var(--onpillar))" />}
