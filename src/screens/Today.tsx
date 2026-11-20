@@ -1,7 +1,7 @@
 import { ChevronRight, Play, Plus, Settings2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { coach } from '../core/coach';
+import { coach, type TodayView } from '../core/coach';
 import { useCtx } from '../core/ctx';
 import { saveCheckin } from '../core/db';
 import { fmtDayLong } from '../core/format';
@@ -11,7 +11,7 @@ import { MODULE_LIST } from '../modules/registry';
 import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
 import { Row } from '../shared/layout/page';
-import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, type WeekProgress } from '../shared/ui/kit';
+import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
 const FEELING: Record<Feeling, string> = { pigg: 'Pigg', okej: 'Okej', trott: 'Trött' };
 
@@ -57,9 +57,29 @@ export function Today() {
         </button>
       </section>
 
-      {view.today.note && <p className="mt-5 text-[15px] text-ink2">{view.today.note}</p>}
+      {main.id === view.today.primary.id && view.today.addOns.length > 0 && (
+        <section className="mt-6">
+          <Kicker>Passar ihop med, om tiden räcker</Kicker>
+          <div className="mt-1">
+            {view.today.addOns.map((a) => (
+              <Row key={a.when} title={`${a.when === 'före' ? 'Före' : 'Efter'}: ${a.label}`} sub={a.hint} onClick={() => start(a.session)} />
+            ))}
+          </div>
+        </section>
+      )}
+
+      {view.today.notes.length > 0 && (
+        <section className="mt-8 rounded-2xl bg-ink/[0.05] px-5 py-4">
+          <div className="text-[13px] font-medium text-ink2">Hänsyn i dag</div>
+          <ul className="mt-1">
+            {view.today.notes.map((n, i) => <li key={i} className="py-1.5 text-[15px] leading-snug">{n.text}</li>)}
+          </ul>
+        </section>
+      )}
 
       <WhyToday kind={main.module} />
+
+      <WeekLeft view={view.today} />
 
       <button onClick={() => setFormOpen(true)} className="mt-8 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-5 py-4 text-left">
         <span>
@@ -138,6 +158,39 @@ function WhyToday({ kind }: { kind: PlannedSession['module'] }) {
           <span>Alla artiklar</span><ChevronRight size={18} strokeWidth={1.5} />
         </Link>
       </div>
+    </section>
+  );
+}
+
+/** What is left of the week, per pillar, plus the WHO health floor for aerobic minutes. */
+function WeekLeft({ view }: { view: TodayView }) {
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between">
+        <Kicker>Kvar av veckan</Kicker>
+        <span className="num text-[13px] text-ink2">{view.daysLeft} {view.daysLeft === 1 ? 'dag' : 'dagar'} kvar</span>
+      </div>
+      <ul className="mt-2">
+        {view.week.map((w) => (
+          <li key={w.module} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-3 text-[15px]">
+            <span>{w.name}</span>
+            <span className="flex gap-1" aria-hidden="true">
+              {Array.from({ length: w.target }, (_, i) => (
+                <span key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i < w.done ? color(w.module) : color(w.module, 0.15) }} />
+              ))}
+            </span>
+            <span className="num text-ink2">{w.done}/{w.target} {w.unit}</span>
+          </li>
+        ))}
+        <li className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-3 text-[15px]">
+          <span>Kondition</span>
+          <span className="relative h-1.5 rounded-full bg-ink/10" aria-hidden="true">
+            <span className="absolute inset-y-0 left-0 rounded-full bg-ink/60" style={{ width: `${Math.min(100, (view.aerobicMin / 150) * 100)}%` }} />
+          </span>
+          <span className="num text-ink2">{view.aerobicMin}/150 min</span>
+        </li>
+      </ul>
+      <p className="mt-2 text-[13px] text-ink2">150 minuter kondition och styrka två dagar i veckan är WHO:s rekommendation för vuxna.</p>
     </section>
   );
 }

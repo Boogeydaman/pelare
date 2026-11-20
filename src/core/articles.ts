@@ -44,12 +44,17 @@ export const ARTICLES: Article[] = [
         'Är kroppen redo? En muskel som tränats hårt de senaste två dygnen tränas inte hårt igen. Efter tunga ben läggs inte intervaller dagen efter, eftersom tunga ben och hård löpning bör ligga minst ett dygn isär [16].',
         'Hur mår du? Säger du att du är trött blir förslagen lugna. Har du redan tränat hårt i dag blir resten av dagen lätt.',
         'Hur mycket tid har du? Passet kortas så att det ryms, men aldrig så mycket att det tappar sin poäng.',
+        'Når du hälsogolvet? Ligger du efter med konditionen – 150 minuter i veckan är WHO:s rekommendation [25] – väger löpning lite tyngre.',
+      ] },
+      { h: 'Skyddsregler som alltid gäller', p: [
+        'Högst två hårda dagar i rad. Inget hårt pass om du redan tränat hårt samma dag. Tunga ben och hård löpning minst ett dygn isär [16]. De här reglerna kan inga poäng gå runt – under ”Hänsyn i dag” ser du när de har styrt förslaget.',
+        'Räcker tiden föreslås också uppvärmning före och en kort stretch efter. Det är så rörligheten blir en vana utan att kräva egna pass.',
       ] },
       { h: 'Du bestämmer alltid', p: [
         'Förslaget är en rekommendation, inte en order. Under ”Eller” finns alltid ett alternativ från varje annan pelare, och vila är alltid ett giltigt val. Under ”Visa hela passet” ser du exakt vad som ingår.',
       ] },
     ],
-    sources: [16],
+    sources: [16, 25],
   },
   {
     id: 'trygghet', group: 'Grunden', topic: 'all', minutes: 3, kicker: 'Träna tryggt',
