@@ -115,7 +115,7 @@ export function build(ctx: ModuleCtx, opts: BuildOpts): PlannedSession {
       cands.sort((a, b) => b.areas.filter((x) => pool.includes(x)).reduce((v, x) => v + need(x), 0) - a.areas.filter((x) => pool.includes(x)).reduce((v, x) => v + need(x), 0));
       const pick = level(cands[0], focus.has(area) ? n : Math.min(n, 7));
       const next = [...holds, hold(pick.id, sec, focus.has(area) ? rounds : Math.max(1, rounds - 1))];
-      if (minutesOf(next) > opts.minutes && holds.length >= 2) break;
+      if ((minutesOf(next) > opts.minutes && holds.length >= 2) || holds.length >= 8) break;
       holds.splice(0, holds.length, ...next);
       for (const a of pick.areas) covered.set(a, (covered.get(a) ?? 0) + 1);
     }

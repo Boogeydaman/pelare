@@ -79,6 +79,7 @@ export async function removeSampleData() {
 
 export async function resetAll() {
   await Promise.all([db.kv.clear(), db.sessions.clear(), db.tests.clear(), db.checkins.clear()]);
+  try { ['pelare.gymplayer', 'pelare.installHidden'].forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
 }
 
 export async function exportAll() {

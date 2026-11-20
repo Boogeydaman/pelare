@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { exportAll, importAll, removeSampleData, resetAll, saveProfile } from '../core/db';
 import { useCtx } from '../core/ctx';
 import { useTheme } from '../core/theme';
@@ -18,6 +19,7 @@ const EQUIP: { value: Equip; label: string }[] = [
 
 export function Settings() {
   const ctx = useCtx();
+  const nav = useNavigate();
   const [theme, setTheme] = useTheme();
   const [edit, setEdit] = useState<Edit>(null);
   const [msg, setMsg] = useState('');
@@ -64,7 +66,7 @@ export function Settings() {
         <Section title="Data">
           <Row title="Exportera säkerhetskopia" right="JSON" onClick={exportAll} />
           <Row title="Importera säkerhetskopia" onClick={() => file.current?.click()} />
-          <Row title="Ta bort exempeldata" onClick={async () => { await removeSampleData(); setMsg('Exempeldatan är borttagen.'); }} />
+          {ctx.logs.some((l) => l.sample) && <Row title="Ta bort exempeldata" onClick={async () => { await removeSampleData(); setMsg('Exempeldatan är borttagen.'); }} />}
           <Row title={<span className="text-gym">Radera all data</span>} onClick={() => setEdit('reset')} />
           <input ref={file} type="file" accept="application/json,.json" className="hidden" onChange={async (e) => {
             const f = e.target.files?.[0];
@@ -95,7 +97,7 @@ export function Settings() {
       </Sheet>
       <Sheet open={edit === 'reset'} onClose={() => setEdit(null)} title="Radera allt?">
         <p className="mb-6 text-[16px]">Profil, pass och tester tas bort från telefonen. Det går inte att ångra.</p>
-        <div className="pb-4"><Primary onClick={() => resetAll()}>Radera</Primary></div>
+        <div className="pb-4"><Primary onClick={async () => { await resetAll(); nav('/idag', { replace: true }); }}>Radera</Primary></div>
       </Sheet>
     </div>
   );

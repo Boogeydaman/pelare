@@ -1,7 +1,7 @@
 import { ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { saveProfile } from '../core/db';
-import { seedSamples } from '../core/sample';
+import { useNavigate } from 'react-router-dom';
 import type { Equip, Goals, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
 import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
 import { InstallCard } from '../shared/ui/InstallCard';
@@ -39,6 +39,7 @@ const MODULE_TITLE: Record<ModuleId, [string, string]> = {
 };
 
 export function Onboarding() {
+  const nav = useNavigate();
   const [i, setI] = useState(0);
   const [goals, setGoals] = useState<Goals>({ gym: 'stronger', run: 'start', mobility: 'front_split' });
   const [focus, setFocus] = useState<MobilityFocus[]>([]);
@@ -62,8 +63,9 @@ export function Onboarding() {
         mobility: { programId: 'whole', startedAt: now },
       },
     };
-    await seedSamples(profile);
     await saveProfile(profile);
+    // Always land on Idag – onboarding can start from any address (e.g. after "Radera all data" in Settings).
+    nav('/idag', { replace: true });
   };
 
   if (step === 'welcome') {
