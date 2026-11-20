@@ -91,6 +91,7 @@ export interface SessionLog {
   note?: string;
   data?: LogData;
   plan?: PlannedSession; // snapshot, for "Kör igen"
+  replaces?: ModuleId; // "Jag tränade något annat i dag": counts as that pillar's session
   sample?: boolean; // seeded example data
 }
 

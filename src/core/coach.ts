@@ -59,7 +59,7 @@ export function planLoad(s: PlannedSession, modules: TrainingModule[]): Load {
   return modules.find((m) => m.id === s.module)?.load(log) ?? {};
 }
 
-const isHard = (l: SessionLog, modules: TrainingModule[]) => !!modules.find((m) => m.id === l.module)?.load(l).hard;
+const isHard = (l: SessionLog, modules: TrainingModule[]) => l.replaces === 'gym' || l.replaces === 'run' || !!modules.find((m) => m.id === l.module)?.load(l).hard;
 
 // ---------------------------------------------------------------- Coach
 
@@ -88,7 +88,9 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
     if (logs.some((l) => isSameDay(l.startedAt, day) && isHard(l, modules))) streak++; else break;
   }
   const lightOnly = tired || hardToday || streak >= 2;
-  if (hardToday) notes.push({ text: 'Du har redan kört ett hårt pass i dag, så resten av dagen blir lugn.' });
+  const replacedToday = todayLogs.some((l) => l.replaces);
+  if (replacedToday) notes.push({ text: 'Du har tränat något annat i dag och det räknas som dagens pass. Inget mer behövs – vill du göra något blir det lugnt.' });
+  else if (hardToday) notes.push({ text: 'Du har redan kört ett hårt pass i dag, så resten av dagen blir lugn.' });
   else if (streak >= 2) notes.push({ text: 'Två hårda dagar i rad. I dag blir det något lugnt så att kroppen hinner bygga upp sig.' });
   else if (tired) notes.push({ text: 'Du känner dig trött, så förslagen är lugna i dag.' });
   if (comeback) {
@@ -128,7 +130,7 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
     const left = Math.max(0, w.target - w.done);
     const need = w.target ? left / w.target : 0;
     const urgency = Math.min(1, left / Math.max(1, daysLeft));
-    const doneToday = todayLogs.some((l) => l.module === m.id);
+    const doneToday = todayLogs.some((l) => l.module === m.id || l.replaces === m.id);
 
     return m.candidates(ctx).map((s, i): Scored => {
       const load = planLoad(s, modules);

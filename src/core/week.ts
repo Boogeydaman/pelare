@@ -59,8 +59,10 @@ export function planWeek(ctx: ModuleCtx, modules: TrainingModule[], view: TodayV
     const date = new Date(start); date.setDate(start.getDate() + i);
     const today = isSameDay(date, now);
     const past = !today && date < now;
-    const done = [...new Set(logs.filter((l) => isSameDay(l.startedAt, date)).map((l) => l.module))];
-    return { date, label: WEEKDAYS[i], index: i, past, today, done, planned: [], mobility: done.includes('mobility') ? 'done' : null, fixed: fixedDays.includes(i) };
+    const dayLogs = logs.filter((l) => isSameDay(l.startedAt, date));
+    const done = [...new Set(dayLogs.map((l) => l.module))];
+    const mobDone = done.includes('mobility') || dayLogs.some((l) => l.replaces === 'mobility');
+    return { date, label: WEEKDAYS[i], index: i, past, today, done, planned: [], mobility: mobDone ? 'done' : null, fixed: fixedDays.includes(i) };
   });
   const t = days.findIndex((d) => d.today);
   const week = Object.fromEntries(view.week.map((w) => [w.module, w])) as Record<ModuleId, TodayView['week'][number]>;
@@ -69,7 +71,7 @@ export function planWeek(ctx: ModuleCtx, modules: TrainingModule[], view: TodayV
 
   const sick = view.primary.id === 'sick';
   const todayDay = days[t];
-  const doneMainToday = todayDay.done.some((m) => m === 'gym' || m === 'run');
+  const doneMainToday = logs.some((l) => isSameDay(l.startedAt, now) && (l.module === 'gym' || l.module === 'run' || !!l.replaces));
 
   // Today: the coach's pick, if it moves the week forward.
   const pick = view.primary.module;

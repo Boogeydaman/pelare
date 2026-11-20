@@ -4,10 +4,10 @@ import { Link, useNavigate } from 'react-router-dom';
 import { coach, type TodayView } from '../core/coach';
 import { planWeek, type WeekPlan } from '../core/week';
 import { useCtx } from '../core/ctx';
-import { removeSampleData, saveCheckin, useActive } from '../core/db';
-import { fmtDayLong } from '../core/format';
+import { removeSampleData, saveCheckin, saveSession, uid, useActive } from '../core/db';
+import { fmtDayLong, isSameDay } from '../core/format';
 import { useStart } from '../core/start';
-import type { CheckIn, Feeling, PlannedSession } from '../core/types';
+import type { CheckIn, Feeling, ModuleId, PlannedSession } from '../core/types';
 import { MODULE_LIST } from '../modules/registry';
 import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
@@ -25,6 +25,7 @@ export function Today() {
   const [formOpen, setFormOpen] = useState(false);
   const [peek, setPeek] = useState(false);
   const [pick, setPick] = useState<string | null>(null);
+  const [otherOpen, setOtherOpen] = useState(false);
 
   const view = useMemo(() => {
     if (!ctx) return null;
@@ -90,6 +91,14 @@ export function Today() {
           </ul>
         </section>
       )}
+
+      {main.module !== 'rest' && !ctx.logs.some((l) => isSameDay(l.startedAt, ctx.now) && (l.module === main.module || l.replaces)) && (
+        <button onClick={() => setOtherOpen(true)} className="mt-3 flex min-h-[44px] w-full items-center justify-between rounded-2xl border border-rule px-4 text-left text-[15px]">
+          <span>Jag tränade något annat i dag</span><ChevronRight size={18} strokeWidth={1.5} className="text-ink2" aria-hidden="true" />
+        </button>
+      )}
+
+      <OtherSheet open={otherOpen} onClose={() => setOtherOpen(false)} replaces={main.module === 'rest' ? undefined : main.module} title={main.title} />
 
       <YourWeek plan={view.plan} />
 
@@ -253,6 +262,53 @@ function WeekLeft({ view }: { view: TodayView }) {
       </ul>
       <p className="mt-2 text-[13px] text-ink2">150 minuter kondition och styrka två dagar i veckan är WHO:s rekommendation för vuxna.</p>
     </section>
+  );
+}
+
+const OTHER_TYPES = [
+  { value: 'cardio', label: 'Kondition', hint: 'Cykel, simning, crosstrainer' },
+  { value: 'sport', label: 'Sport', hint: 'Fotboll, padel, klättring' },
+  { value: 'walk', label: 'Promenad', hint: 'Lång promenad eller vandring' },
+  { value: 'other', label: 'Annat', hint: 'Gruppass, yoga, annan styrka' },
+];
+
+/** "Jag tränade något annat i dag": logs it and lets it replace today's session, after a confirm. */
+function OtherSheet({ open, onClose, replaces, title }: { open: boolean; onClose: () => void; replaces?: ModuleId; title: string }) {
+  const [type, setType] = useState('cardio');
+  const [minutes, setMinutes] = useState(45);
+  const [what, setWhat] = useState('');
+  const label = OTHER_TYPES.find((x) => x.value === type)!;
+  return (
+    <Sheet open={open} onClose={onClose} title="Tränat något annat?">
+      <div className="flex flex-col gap-5 pb-4">
+        <p className="text-[15px] leading-snug text-ink2">
+          Det räknas som dagens pass{replaces ? ` (${title})` : ''}, så du behöver inte klämma in två pass i dag. Planen för resten av veckan räknas om.
+        </p>
+        <div className="grid grid-cols-2 gap-2">
+          {OTHER_TYPES.map((o) => (
+            <button key={o.value} aria-pressed={type === o.value} onClick={() => setType(o.value)}
+              className={`rounded-2xl px-3 py-2.5 text-left ${type === o.value ? 'bg-ink text-paper' : 'bg-ink/[0.06]'}`}>
+              <span className="block text-[15px] font-medium">{o.label}</span>
+              <span className={`block text-[12px] ${type === o.value ? 'text-paper/70' : 'text-ink2'}`}>{o.hint}</span>
+            </button>
+          ))}
+        </div>
+        <label className="flex h-12 items-center rounded-2xl bg-ink/[0.06] px-4">
+          <input value={what} onChange={(e) => setWhat(e.target.value)} placeholder="Vad gjorde du? (valfritt)" aria-label="Vad gjorde du"
+            className="h-full flex-1 bg-transparent text-[16px] outline-none placeholder:text-ink2" />
+        </label>
+        <div>
+          <div className="mb-2 text-[14px] text-ink2">Hur länge?</div>
+          <Segmented label="Minuter" value={minutes} onChange={setMinutes} options={[20, 30, 45, 60, 90].map((n) => ({ value: n, label: String(n) }))} />
+        </div>
+        <Primary onClick={async () => {
+          const name = what.trim() || label.label;
+          await saveSession({ id: uid(), module: 'other', type, title: name, minutes, feel: 2, replaces,
+            startedAt: new Date(Date.now() - minutes * 60000).toISOString(), data: { kind: 'other', activity: name } });
+          setWhat(''); onClose();
+        }}>Bekräfta – jag har tränat</Primary>
+      </div>
+    </Sheet>
   );
 }
 

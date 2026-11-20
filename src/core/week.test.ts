@@ -74,6 +74,19 @@ describe('Din vecka', () => {
     expect(['mobility', 'rest']).toContain(v.primary.module);
   });
 
+  it('annan träning ersätter dagens pass och räknas i veckan', () => {
+    const now = at('2026-11-18T18:00:00');
+    const before = ctx(now);
+    const gymBefore = MODULE_LIST.find((m) => m.id === 'gym')!.weekly(before).done;
+    const other: SessionLog = { id: 'o1', module: 'other', type: 'sport', title: 'Fotboll', startedAt: '2026-11-18T17:00:00', minutes: 60, replaces: 'gym' };
+    const c = ctx(now, [other]);
+    expect(MODULE_LIST.find((m) => m.id === 'gym')!.weekly(c).done).toBe(gymBefore + 1);
+    const v = coach(c, MODULE_LIST);
+    expect(['mobility', 'rest']).toContain(v.primary.module);
+    const p = planWeek(c, MODULE_LIST, v);
+    expect(p.days.find((d) => d.today)!.planned).toHaveLength(0);
+  });
+
   it('sjuk → pausat och inget planerat', () => {
     const p = plan(ctx(at('2026-11-18T08:00:00'), [], profile(), 'sjuk'));
     expect(p.tone).toBe('paused');
