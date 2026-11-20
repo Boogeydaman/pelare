@@ -59,6 +59,8 @@ export const useTests = (module?: string) =>
     return rows.sort((a, b) => a.date.localeCompare(b.date));
   }, [module]);
 
+export const useRecentCheckins = (fromDate: string) => useLiveQuery(async () => db.checkins.where('date').aboveOrEqual(fromDate).toArray(), [fromDate]);
+
 export const useCheckin = (date: string) => useLiveQuery(async () => (await db.checkins.get(date)) ?? null, [date]);
 
 // ---------- Writes ----------

@@ -118,7 +118,19 @@ export function test5k(): PlannedSession {
 /** The next session for the week: walk-run for beginners, otherwise one interval session, one long run, the rest easy. */
 export function next(ctx: ModuleCtx): PlannedSession {
   const st = stage(ctx.profile, ctx.logs);
-  if (st !== 'done') return walkRun(st);
+  const lastRun = runs(ctx.logs).reduce((m, l) => Math.max(m, new Date(l.startedAt).getTime()), 0);
+  const gap = lastRun ? Math.floor((ctx.now.getTime() - lastRun) / DAY) : 0;
+  if (st !== 'done') {
+    // After two weeks off, repeat the previous walk-run step (H).
+    const s = gap >= 14 ? Math.max(0, st - 1) : st;
+    const p = walkRun(s);
+    return gap >= 14 ? { ...p, reasons: [{ text: `${gap} dagar sedan senaste löppasset – du kör förra steget igen innan du går vidare.` }, ...p.reasons] } : p;
+  }
+  if (gap >= 10) {
+    const g0 = guard(ctx.profile, ctx.logs, ctx.now);
+    const p = easy(Math.round(Math.max(15, g0.longestMin * 0.5)), g0);
+    return { ...p, reasons: [{ text: `${gap} dagar sedan senaste löppasset: ett kortare lugnt pass först, sedan bygger vi upp igen.` }, ...p.reasons] };
+  }
   const g = guard(ctx.profile, ctx.logs, ctx.now);
   const week = runs(ctx.logs).filter((l) => new Date(l.startedAt) >= weekStart(ctx.now));
   const base = runs(ctx.logs).filter((l) => ctx.now.getTime() - new Date(l.startedAt).getTime() <= 30 * DAY).length;

@@ -14,6 +14,8 @@ Gym, löpning och rörlighet – tre program, en plan.
 - **Fas D (rörlighet): huvuddelen klar.** 44 stretchar och djurrörelser, rutinerna Hela kroppen 10 min, Snabbstretch och Djurrörelser, samt målprogram som bygger upp till 3 varv. Underlaget finns i [docs/kunskap/stretch-transkript.md](docs/kunskap/stretch-transkript.md).
 - **Kunskap:** 8 artiklar om filosofin bakom träningen (`/las`), med källor och evidensnivå, plus avsnittet ”Därför i dag” på Idag. Källorna finns i `src/core/sources.ts`.
 - **Fas C (löpning): huvuddelen klar.** Gå-spring i 11 steg, skadevakt, 80/20, intervaller, långpass och tester.
+- **Sjukdom och uppehåll:** dagsformen Sjuk ger vila och pausar veckomålen. Efter sjukdom eller fem dagar utan pass tar coachen inte igen missade pass, och första gym- och löppasset blir lättare.
+- **Framsteg:** ”Förra gången” i passläget, en historiksida per övning (senast, bästa set, kurva, alla pass), listan Dina övningar med trendpil och personliga rekord på Klart-skärmen och under Du.
 - **Fas E (coachen): klar.** Skyddsregler (högst två hårda dagar i rad, 24 h mellan tunga ben och hård löpning, lugnt vid trötthet), gemensam återhämtningsmodell, prioritering efter vad som är kvar av veckan, WHO:s hälsogolv, uppvärmning och stretch som tillägg, och allt förklarat under ”Hänsyn i dag” och ”Kvar av veckan”.
 
 ## Kom igång

@@ -12,6 +12,8 @@ export interface ModuleCtx {
   tests: TestResult[]; // all modules, oldest first
   checkin: CheckIn;
   now: Date;
+  /** Check-ins from the last 14 days (for sick days). Optional so tests can leave it out. */
+  recentCheckins?: CheckIn[];
 }
 
 export interface PlayerProps {
@@ -25,6 +27,9 @@ export interface LogFormProps {
 }
 
 export interface TestDef { id: string; label: string; unit: string; invert?: boolean; how: string }
+
+/** A personal record, e.g. heaviest weight or longest run. */
+export interface RecordItem { module: ModuleId; date: string; title: string; detail: string }
 
 /** Load a session puts on the body, used by the shared recovery model (0–1 per region). */
 export interface Load { legs?: number; upper?: number; hard?: boolean }
@@ -64,4 +69,9 @@ export interface TrainingModule {
   LogForm: FC<LogFormProps>;
   /** Optional extra settings shown on the module's program page (e.g. mobility focus areas). */
   ProgramExtra?: FC;
+  /** Optional extra content on Framsteg (e.g. list of exercises) and on a library item (e.g. its history). */
+  ProgressExtra?: FC;
+  LibraryExtra?: FC<{ id: string }>;
+  /** Records a new log sets, compared with everything before it. */
+  records?(prev: SessionLog[], log: SessionLog): RecordItem[];
 }

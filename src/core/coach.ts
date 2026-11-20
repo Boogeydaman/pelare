@@ -69,6 +69,17 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   const todayLogs = logs.filter((l) => isSameDay(l.startedAt, now));
   const hardToday = todayLogs.some((l) => isHard(l, modules));
   const tired = checkin.feeling === 'trott';
+  const sick = checkin.feeling === 'sjuk';
+
+  // Sick today: rest. Weekly targets pause – nothing has to be made up.
+  if (sick) return sickDay(ctx, modules);
+
+  // Back after illness or a break: no catching up, and a gentler first session.
+  const trainingLogs = logs.filter((l) => l.module !== 'other');
+  const last = trainingLogs.reduce((m, l) => Math.max(m, new Date(l.startedAt).getTime()), 0);
+  const gapDays = last ? Math.floor((now.getTime() - last) / DAY) : 0;
+  const sickRecently = (ctx.recentCheckins ?? []).some((c) => c.feeling === 'sjuk' && c.date !== checkin.date && now.getTime() - new Date(c.date).getTime() <= 7 * DAY);
+  const comeback = sickRecently || gapDays >= 5;
 
   // safety.hard_days: at most two hard days in a row.
   let streak = 0;
@@ -80,6 +91,11 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   if (hardToday) notes.push({ text: 'Du har redan kört ett hårt pass i dag, så resten av dagen blir lugn.' });
   else if (streak >= 2) notes.push({ text: 'Två hårda dagar i rad. I dag blir det något lugnt så att kroppen hinner bygga upp sig.' });
   else if (tired) notes.push({ text: 'Du känner dig trött, så förslagen är lugna i dag.' });
+  if (comeback) {
+    notes.push({ text: sickRecently
+      ? 'Välkommen tillbaka efter sjukdomen. Du behöver inte ta igen något du missat – appen fortsätter från där du är, och de första passen blir lite lättare.'
+      : `Välkommen tillbaka efter ${gapDays} dagar. Inget behöver tas igen – första passet blir lite lättare så att kroppen hinner vänja sig igen.` });
+  }
 
   // concurrent.spacing [16]: hard legs and hard running at least 24 h apart.
   const recent = logs.filter((l) => { const dt = now.getTime() - new Date(l.startedAt).getTime(); return dt >= 0 && dt < DAY; });
@@ -112,7 +128,9 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
 
       const fatigue = (load.legs ?? 0) * Math.min(1, body.legs / 1.2) + (load.upper ?? 0) * Math.min(1, body.upper / 1.2);
       const fit = s.minutes <= checkin.minutes ? 0.1 : -0.4;
-      let score = 0.55 * need + 0.45 * urgency + fit - 0.35 * fatigue - (s.penalty ?? 0) - i * 0.12;
+      // After a break, urgency is ignored: missed sessions are never crammed in.
+      let score = 0.55 * need + (comeback ? 0 : 0.45 * urgency) + fit - 0.35 * fatigue - (s.penalty ?? 0) - i * 0.12;
+      if (comeback && hard) score -= 0.3;
       if (doneToday) score -= 0.7;
       if (m.id === 'run' && aerobicBehind) score += 0.15;
       if (checkin.feeling === 'pigg' && hard) score += 0.08;
@@ -170,4 +188,28 @@ function addOns(primary: PlannedSession, ctx: ModuleCtx, modules: TrainingModule
   }
   if (after && spare >= after.minutes) out.push({ when: 'efter', label: after.title, hint: `${after.minutes} min stretch – räknas mot rörlighetsmålet`, session: after });
   return out;
+}
+
+/** Sick day: rest first, at most a gentle stretch. Uses the "neck check" heuristic (H). */
+function sickDay(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
+  const rest: PlannedSession = {
+    ...REST, id: 'sick', type: 'sick', title: 'Vila och bli frisk', minutes: Math.min(20, ctx.checkin.minutes), summary: 'Vila, drick och sov',
+    reasons: [
+      { text: 'Kroppen behöver energin till att bli frisk. Några dagars vila påverkar inte formen nämnvärt, men att träna hårt när du är sjuk kan förlänga sjukdomen.' },
+      { text: 'Veckomålen pausas. När du är frisk igen fortsätter appen därifrån, utan att försöka ta igen något.' },
+    ],
+    content: { kind: 'rest', text: 'Vila. Vill du röra på dig: högst en lugn promenad, och bara om du saknar feber.' },
+  };
+  const micro = modules.find((m) => m.id === 'mobility')?.quickStarts(ctx).find((q) => q.id === 'micro')?.session;
+  const alternatives = micro ? [{ ...micro, id: 'sick:stretch', title: 'Lätt stretch', reasons: [{ text: 'Bara om du känner för det och saknar feber.' }] }] : [];
+  const week: WeekLine[] = modules.map((m) => { const w = m.weekly(ctx); return { module: m.id, name: m.name, done: w.done, target: w.target, unit: w.unit }; });
+  return {
+    primary: rest, alternatives, addOns: [], week,
+    daysLeft: 7 - Math.floor((ctx.now.getTime() - weekStart(ctx.now).getTime()) / DAY),
+    aerobicMin: 0,
+    notes: [
+      { text: 'Du är sjuk – i dag handlar det om vila. Veckomålen pausas och inget behöver tas igen.' },
+      { text: 'Tumregel: bara snuva eller lite ont i halsen, ingen feber? En promenad eller lätt stretch går bra om du vill. Feber, hosta, värk i kroppen eller magsjuka: vila helt tills du är frisk, och ett par dagar till.' },
+    ],
+  };
 }

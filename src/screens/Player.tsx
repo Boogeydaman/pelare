@@ -1,4 +1,4 @@
-import { X } from 'lucide-react';
+import { Trophy, X } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useCtx } from '../core/ctx';
@@ -90,6 +90,11 @@ export function DonePage() {
     return { before: w(ctx.logs), after: w([log, ...ctx.logs]) };
   }, [ctx, log]);
 
+  const records = useMemo(() => {
+    if (!ctx || !log || log.module === 'other') return [];
+    return MODULE[log.module].records?.(ctx.logs, log) ?? [];
+  }, [ctx, log]);
+
   useEffect(() => { if (active === null) nav('/idag', { replace: true }); }, [active, nav]);
   if (!active || !log || !weeks) return null;
 
@@ -109,6 +114,14 @@ export function DonePage() {
         <p className="rise mt-3 text-[18px] text-ink2" style={{ animationDelay: '120ms' }}>
           {log.title} · <span className="num">{log.minutes}</span> min
         </p>
+        {records.length > 0 && (
+          <div className="rise mt-8 rounded-[24px] px-5 py-4" style={{ background: color(active.plan.module, 0.12), animationDelay: '150ms' }}>
+            <div className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: color(active.plan.module) }}><Trophy size={16} aria-hidden="true" /> {records.length === 1 ? 'Nytt rekord' : `${records.length} nya rekord`}</div>
+            <ul className="mt-1">
+              {records.map((r, i) => <li key={i} className="py-1 text-[16px]"><span className="font-medium">{r.title}</span> · {r.detail.replace(/^Nytt rekord: /, '')}</li>)}
+            </ul>
+          </div>
+        )}
         <div className="rise mt-12" style={{ animationDelay: '180ms' }}>
           <Pillars week={weeks.after} animateFrom={weeks.before} size="lg" />
         </div>

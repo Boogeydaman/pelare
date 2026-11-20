@@ -1,6 +1,6 @@
 // Gym planner: picks exercises for the place, sets loads with double progression,
 // climbs bodyweight ladders and tracks weekly volume per muscle.
-import { weekStart } from '../../core/format';
+import { fmtDate, weekStart } from '../../core/format';
 import type { ExerciseResult, Goals, PlannedSession, Profile, SessionLog, StrengthItem } from '../../core/types';
 import type { ModuleCtx } from '../types';
 import { EX, MUSCLES, MUSCLE_NAME, type Exercise, type Muscle, type Need } from './exercises';
@@ -175,7 +175,18 @@ export function build(ctx: ModuleCtx, tpl: SessionTemplate, opts: { minutes?: nu
     if (base.id !== slot.ex) swapped.push(base.name);
     const t = target(base, ctx.logs, slot.reps);
     if (t.progressed && progress.length < 1) progress.push(`${t.ex.name}: ${t.note?.replace(/\.$/, '')}.`);
-    items.push(toItem(t, slot));
+    items.push(toItem(t, slot, history(ctx.logs, t.ex.id)[0]));
+  }
+
+  // Back after a break (illness, holiday): 10 % lighter and one set fewer the first session (H).
+  const lastGym = ctx.logs.filter((l) => l.module === 'gym').reduce((m, l) => Math.max(m, new Date(l.startedAt).getTime()), 0);
+  const gymGap = lastGym ? Math.floor((ctx.now.getTime() - lastGym) / 864e5) : 0;
+  if (gymGap >= 10) {
+    for (const i of items) {
+      if (i.kg && i.kg > 0) i.kg = round(i.kg * 0.9, i.step);
+      i.sets = Math.max(2, i.sets - 1);
+    }
+    progress.splice(0, progress.length, `${gymGap} dagar sedan senaste gympasset: 10 % lättare och ett set färre i dag, så att kroppen hinner vänja sig igen.`);
   }
 
   // Fit the time: trim sets on the last exercises, then drop exercises (keep at least 3).
@@ -213,7 +224,14 @@ export function build(ctx: ModuleCtx, tpl: SessionTemplate, opts: { minutes?: nu
   };
 }
 
-function toItem(t: Target, slot: Slot): StrengthItem {
+export function lastText(d?: Done): string | undefined {
+  if (!d) return undefined;
+  const sets = d.result.sets;
+  const kg = Math.max(...sets.map((x) => x.kg));
+  return `${fmtDate(d.date)} · ${kg > 0 ? `${fmtKg(kg)} kg × ` : ''}${sets.map((x) => x.reps).join(', ')}`;
+}
+
+function toItem(t: Target, slot: Slot, last?: Done): StrengthItem {
   const range = slot.reps ?? t.ex.reps;
   const bodyweight = t.kg === 0;
   return {
@@ -221,5 +239,6 @@ function toItem(t: Target, slot: Slot): StrengthItem {
     restSec: slot.rest ?? t.ex.rest, cue: t.ex.cue, bodyweight, unit: slot.unit ?? t.ex.unit,
     note: [slot.note, t.note].filter(Boolean).join(' '),
     target: t.reps,
+    last: lastText(last),
   };
 }

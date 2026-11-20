@@ -87,4 +87,23 @@ describe('Coachen', () => {
       for (const s of all(v)) expect(s.minutes, `${s.title} ${minutes}`).toBeLessThanOrEqual(minutes);
     }
   });
+
+  it('sjuk → vila, bara lätt stretch som alternativ och veckomålen pausas', () => {
+    const v = coach(ctx(base, checkin('sjuk')), MODULE_LIST);
+    expect(v.primary.type).toBe('sick');
+    for (const s of v.alternatives) expect(hard(s)).toBe(false);
+    expect(v.notes.some((x) => x.text.includes('inget behöver tas igen'))).toBe(true);
+  });
+
+  it('tillbaka efter uppehåll → ingen jakt på missade pass och inget hårt första passet', () => {
+    const v = coach(ctx([runLog(24 * 8), gymLog(24 * 9, ['squat'])], checkin('pigg')), MODULE_LIST);
+    expect(v.notes.some((x) => x.text.includes('Välkommen tillbaka'))).toBe(true);
+    expect(hard(v.primary)).toBe(false);
+  });
+
+  it('tillbaka efter sjukdom (sjuk i förrgår) → välkommen tillbaka', () => {
+    const c: ModuleCtx = { ...ctx(base, checkin('okej')), recentCheckins: [{ date: '2026-11-18', feeling: 'sjuk', minutes: 45, place: 'gym' }] };
+    const v = coach(c, MODULE_LIST);
+    expect(v.notes.some((x) => x.text.includes('efter sjukdomen'))).toBe(true);
+  });
 });

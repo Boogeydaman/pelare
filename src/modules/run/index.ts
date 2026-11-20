@@ -110,4 +110,13 @@ export const run: TrainingModule = {
 
   Player: RunPlayer,
   LogForm,
+  records(prev, log) {
+    if (log.module !== 'run') return [];
+    const before = runs(prev);
+    if (!before.length) return [];
+    const out = [];
+    if (log.minutes > Math.max(...before.map((l) => l.minutes))) out.push({ module: 'run' as const, date: log.startedAt, title: 'Längsta löppasset', detail: `${log.minutes} minuter` });
+    if (km(log) > 0 && km(log) > Math.max(0, ...before.map(km))) out.push({ module: 'run' as const, date: log.startedAt, title: 'Längsta distansen', detail: `${fmt1(km(log))} km` });
+    return out;
+  },
 };

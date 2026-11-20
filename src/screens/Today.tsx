@@ -14,7 +14,7 @@ import { InstallCard } from '../shared/ui/InstallCard';
 import { Row } from '../shared/layout/page';
 import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
-const FEELING: Record<Feeling, string> = { pigg: 'Pigg', okej: 'Okej', trott: 'Trött' };
+const FEELING: Record<Feeling, string> = { pigg: 'Pigg', okej: 'Okej', trott: 'Trött', sjuk: 'Sjuk' };
 
 export function Today() {
   const ctx = useCtx();
@@ -120,7 +120,7 @@ export function Today() {
           <div>
             <div className="mb-2 text-[14px] text-ink2">Hur känns kroppen?</div>
             <Segmented label="Känsla" value={c.feeling} onChange={(v) => setCheckin({ feeling: v })}
-              options={[{ value: 'pigg', label: 'Pigg' }, { value: 'okej', label: 'Okej' }, { value: 'trott', label: 'Trött' }]} />
+              options={[{ value: 'pigg', label: 'Pigg' }, { value: 'okej', label: 'Okej' }, { value: 'trott', label: 'Trött' }, { value: 'sjuk', label: 'Sjuk' }]} />
           </div>
           <div>
             <div className="mb-2 text-[14px] text-ink2">Hur mycket tid har du?</div>

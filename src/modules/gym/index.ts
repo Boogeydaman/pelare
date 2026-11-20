@@ -8,6 +8,7 @@ import { EX, EXERCISES, GROUPS, MUSCLES, MUSCLE_NAME, type Exercise, type Need }
 import { PROGRAMS, PROGRAM_BY_ID } from './programs';
 import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } from './planner';
 import { GymPlayer } from './Player';
+import { ExerciseProgress, GymExerciseList, gymRecords } from './progress';
 
 const NEED_NAME: Record<Need, string> = {
   barbell: 'Skivstång', machine: 'Maskin', cable: 'Kabel', dumbbell: 'Hantlar', bench: 'Bänk',
@@ -118,4 +119,7 @@ export const gym: TrainingModule = {
 
   Player: GymPlayer,
   LogForm,
+  ProgressExtra: GymExerciseList,
+  LibraryExtra: ExerciseProgress,
+  records: gymRecords,
 };

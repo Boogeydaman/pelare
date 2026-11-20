@@ -4,7 +4,7 @@ export type ModuleId = 'gym' | 'run' | 'mobility';
 export type LogModule = ModuleId | 'other';
 export const MODULES: ModuleId[] = ['gym', 'run', 'mobility'];
 
-export type Feeling = 'pigg' | 'okej' | 'trott';
+export type Feeling = 'pigg' | 'okej' | 'trott' | 'sjuk';
 export type Place = 'gym' | 'home';
 export type Effort = 'lugnt' | 'medel' | 'hårt';
 export type Feel = 1 | 2 | 3; // lätt, lagom, tungt
@@ -41,6 +41,7 @@ export interface StrengthItem {
   id: string; name: string; sets: number; reps: [number, number]; kg: number | null;
   step: number; restSec: number; cue: string; bodyweight?: boolean;
   unit?: 'reps' | 'sek'; note?: string; target?: number; // planned reps for the first set
+  last?: string; // what was done last time, e.g. "tis 17 nov · 60 kg × 8, 8, 7"
 }
 export interface RunSegment { label: string; seconds: number; effort: 'gå' | 'lugnt' | 'hårt' | 'vila' }
 export interface HoldItem { id: string; name: string; seconds: number; sides: 1 | 2; rounds: number; cue: string }

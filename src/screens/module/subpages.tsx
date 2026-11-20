@@ -83,6 +83,8 @@ export function ProgressPage({ m }: { m: TrainingModule }) {
         ))}
       </div>
 
+      {m.ProgressExtra && <m.ProgressExtra />}
+
       {m.tests && (
         <Section title="Tester">
           {tests.length ? [...tests].reverse().slice(0, 10).map((t) => (
@@ -152,10 +154,8 @@ export function LibraryPage({ m }: { m: TrainingModule }) {
 
 export function LibraryDetail({ m }: { m: TrainingModule }) {
   const { id } = useParams();
-  const ctx = useCtx();
   const item = m.library.items.find((i) => i.id === id);
   if (!item) return <Page title="Hittades inte" back={`/${m.slug}/bibliotek`}><Empty>Den här finns inte längre.</Empty></Page>;
-  const history = (ctx?.logs ?? []).filter((l) => l.data?.kind === 'strength' && l.data.exercises.some((e) => e.id === item.id)).slice(0, 5);
   return (
     <Page kicker={item.group} kind={m.id} title={item.name} back={`/${m.slug}/bibliotek`}>
       <Figure kind={m.id} label={item.name} />
@@ -177,15 +177,7 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
           ))}
         </ol>
       </Section>
-      {m.id === 'gym' && (
-        <Section title="Din historik">
-          {history.length ? history.map((l) => {
-            const ex = l.data?.kind === 'strength' ? l.data.exercises.find((e) => e.id === item.id) : undefined;
-            const best = ex ? Math.max(...ex.sets.map((s) => s.kg)) : 0;
-            return <Row key={l.id} title={fmtDate(l.startedAt)} sub={l.title} right={<span className="num text-ink">{best ? `${fmtNum(best)} kg` : `${ex?.sets.length} set`}</span>} to={`/logg/${l.id}`} />;
-          }) : <Empty>Du har inte gjort den här än.</Empty>}
-        </Section>
-      )}
+      {m.LibraryExtra && <m.LibraryExtra id={item.id} />}
     </Page>
   );
 }

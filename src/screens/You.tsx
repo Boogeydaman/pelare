@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { useCtx } from '../core/ctx';
 import { fmtDate, isSameDay, weekNumber, weekStart } from '../core/format';
 import type { LogModule } from '../core/types';
-import { MODULE_LIST } from '../modules/registry';
+import { recentRecords } from '../core/records';
+import { MODULE, MODULE_LIST } from '../modules/registry';
 import { Empty, Row, Section } from '../shared/layout/page';
 import { IconButton, MODULE_NAME, Pillars, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -15,6 +16,7 @@ export function You() {
   const nav = useNavigate();
   const [offset, setOffset] = useState(0); // months back
   const week = useMemo(() => ctx && (Object.fromEntries(MODULE_LIST.map((m) => [m.id, m.weekly(ctx)])) as WeekProgress), [ctx]);
+  const recs = useMemo(() => (ctx ? recentRecords(ctx.logs, MODULE_LIST, 30, ctx.now) : []), [ctx]);
   if (!ctx || !week) return null;
 
   const month = new Date(ctx.now.getFullYear(), ctx.now.getMonth() - offset, 1);
@@ -69,6 +71,12 @@ export function You() {
           const metric = m.metrics(ctx)[0];
           return <Row key={m.id} kind={m.id} title={m.name} sub={metric.label} right={<span className="num text-ink">{metric.value}{metric.value !== '–' && metric.unit ? ` ${metric.unit}` : ''}</span>} to={`/${m.slug}/framsteg`} />;
         })}
+      </Section>
+
+      <Section title="Rekord senaste 30 dagarna">
+        {recs.length ? recs.slice(0, 6).map((r, i) => (
+          <Row key={i} kind={r.module} title={r.title} sub={`${r.detail} · ${fmtDate(r.date)}`} to={r.module === 'gym' ? '/gym/framsteg' : `/${MODULE[r.module].slug}/framsteg`} />
+        )) : <Empty>Inga nya rekord än. De dyker upp här när du slår ditt bästa.</Empty>}
       </Section>
 
       <Section title="Kunskap">

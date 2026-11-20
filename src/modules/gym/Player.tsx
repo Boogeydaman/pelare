@@ -95,7 +95,8 @@ export function GymPlayer({ plan, onProgress, onFinish }: PlayerProps) {
         <button onClick={skip} className="min-h-[44px] text-[14px] underline underline-offset-4" style={{ color: ON_DIM }}>Hoppa över</button>
       </div>
       <h1 className="mt-1 font-serif text-title">{it.name}</h1>
-      <Dim className="mt-2">{it.cue}</Dim>
+      {it.last && <div className="num mt-2 text-[15px] font-medium">Förra gången: {it.last}</div>}
+      <Dim className="mt-1">{it.cue}</Dim>
       {it.note && <div className="mt-3 rounded-2xl px-4 py-3 text-[14px] leading-snug" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>{it.note}</div>}
 
       <div className="mt-6 flex gap-2" aria-label={`Set ${set + 1} av ${it.sets}`}>

@@ -1,6 +1,6 @@
 import { createContext, createElement, useContext, useMemo, type ReactNode } from 'react';
 import type { ModuleCtx } from '../modules/types';
-import { useCheckin, useProfile, useSessions, useTests } from './db';
+import { useCheckin, useProfile, useRecentCheckins, useSessions, useTests } from './db';
 import type { CheckIn } from './types';
 
 export const todayKey = (d = new Date()) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -14,11 +14,12 @@ export function CtxProvider({ children }: { children: ReactNode }) {
   const tests = useTests();
   const key = todayKey();
   const stored = useCheckin(key);
+  const recent = useRecentCheckins(todayKey(new Date(Date.now() - 14 * 864e5)));
   const value = useMemo(() => {
-    if (!profile || !logs || !tests || stored === undefined) return undefined;
+    if (!profile || !logs || !tests || stored === undefined || !recent) return undefined;
     const checkin: CheckIn = stored ?? { date: key, feeling: 'okej', minutes: 45, place: profile.places[0] };
-    return { profile, logs, tests, checkin, now: new Date() };
-  }, [profile, logs, tests, stored, key]);
+    return { profile, logs, tests, checkin, now: new Date(), recentCheckins: recent };
+  }, [profile, logs, tests, stored, key, recent]);
   return createElement(Ctx.Provider, { value }, children);
 }
 

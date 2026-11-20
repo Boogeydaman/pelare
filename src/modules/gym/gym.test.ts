@@ -4,6 +4,7 @@ import type { ModuleCtx } from '../types';
 import { EX, EXERCISES, type Muscle } from './exercises';
 import { build, equipmentAt, resolve, target, volume, weeklyTarget } from './planner';
 import { PROGRAMS } from './programs';
+import { gymRecords } from './progress';
 
 const NOW = new Date('2026-11-20T17:00:00');
 const ago = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString();
@@ -132,5 +133,38 @@ describe('Passbyggaren', () => {
   it('veckomålet följer målet', () => {
     expect(weeklyTarget('muscle')).toBeGreaterThan(weeklyTarget('stronger'));
     expect(weeklyTarget('maintain')).toBeGreaterThanOrEqual(4);
+  });
+
+  it('efter tio dagars uppehåll: 10 % lättare och ett set färre', () => {
+    const old = log(24 * 12, [['squat', 100, [10, 10, 10]]]);
+    const s = build(ctx({ logs: [old] }), PROGRAMS[0].sessions[0]);
+    if (s.content.kind !== 'strength') throw new Error();
+    const sq = s.content.items.find((i) => i.id === 'squat')!;
+    expect(sq.kg).toBe(92.5); // 100 + 2.5 progression, then −10 % → 92.25 → 92.5
+    expect(sq.sets).toBe(2);
+    expect(s.reasons.some((r) => r.text.includes('dagar sedan senaste gympasset'))).toBe(true);
+  });
+
+  it('visar vad du gjorde förra gången', () => {
+    const s = build(ctx({ logs: [log(72, [['squat', 80, [8, 8, 7]]])] }), PROGRAMS[0].sessions[0]);
+    if (s.content.kind !== 'strength') throw new Error();
+    expect(s.content.items.find((i) => i.id === 'squat')!.last).toMatch(/80 kg × 8, 8, 7/);
+  });
+});
+
+describe('Rekord', () => {
+  it('tyngre vikt än tidigare är ett rekord, första gången är det inte', () => {
+    const first = log(200, [['squat', 80, [8, 8, 8]]]);
+    expect(gymRecords([], first)).toEqual([]);
+    const heavier = log(10, [['squat', 85, [6, 6, 6]]]);
+    expect(gymRecords([first], heavier)[0].detail).toMatch(/85 kg/);
+  });
+
+  it('fler reps på samma vikt är ett rekord, och kroppsvikt räknar reps', () => {
+    const a = log(200, [['squat', 80, [8, 8, 8]], ['pullup', 0, [6, 6, 5]]]);
+    const b = log(10, [['squat', 80, [10, 9, 9]], ['pullup', 0, [8, 7, 6]]]);
+    const r = gymRecords([a], b);
+    expect(r.some((x) => x.detail.includes('80 kg × 10'))).toBe(true);
+    expect(r.some((x) => x.detail.includes('8'))).toBe(true);
   });
 });
