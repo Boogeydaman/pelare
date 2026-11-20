@@ -6,7 +6,8 @@ import { useCtx } from '../../core/ctx';
 import { fmtDate, fmtNum } from '../../core/format';
 import type { SessionLog } from '../../core/types';
 import type { TestDef, TrainingModule } from '../../modules/types';
-import { Empty, Figure, Page, Row, Section, Stat } from '../../shared/layout/page';
+import { Empty, Page, Row, Section, Stat } from '../../shared/layout/page';
+import { Figure } from '../../shared/ui/Figure';
 import { Field, NumberInput, parseNum } from '../../shared/ui/fields';
 import { Primary, Sheet, color } from '../../shared/ui/kit';
 
@@ -158,7 +159,7 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
   if (!item) return <Page title="Hittades inte" back={`/${m.slug}/bibliotek`}><Empty>Den här finns inte längre.</Empty></Page>;
   return (
     <Page kicker={item.group} kind={m.id} title={item.name} back={`/${m.slug}/bibliotek`}>
-      <Figure kind={m.id} label={item.name} />
+      <Figure anim={item.anim} kind={m.id} label={item.name} />
       <p className="mt-4 text-[15px] text-ink2">{item.meta}</p>
       {item.extra && (
         <dl className="mt-6">
@@ -172,11 +173,18 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
       )}
       <Section title="Så gör du">
         <ol>
-          {item.tips.map((t, i) => (
-            <li key={i} className="flex gap-4 border-t border-rule py-3 text-[17px]"><span className="num text-ink2">{i + 1}</span>{t}</li>
+          {(item.how ?? item.tips).map((t, i) => (
+            <li key={i} className="flex gap-4 border-t border-rule py-3 text-[17px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{i + 1}</span><span>{t}</span></li>
           ))}
         </ol>
       </Section>
+      {item.how && item.tips.length > 0 && (
+        <Section title="Tänk på">
+          <ul>
+            {item.tips.map((t, i) => <li key={i} className="border-t border-rule py-2.5 text-[15px] text-ink2">{t}</li>)}
+          </ul>
+        </Section>
+      )}
       {m.LibraryExtra && <m.LibraryExtra id={item.id} />}
     </Page>
   );

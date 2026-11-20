@@ -54,6 +54,7 @@ export function Settings() {
         <Section title="App">
           <div className="border-t border-rule pt-4"><InstallCard dismissible={false} /></div>
           <p className="pt-3 text-[14px] text-ink2">Redan installerad? Då syns inget här. Din data ligger i telefonens lagring och skickas aldrig någonstans.</p>
+          <p className="num pt-2 text-[14px] text-ink2">Version {__APP_VERSION__}</p>
         </Section>
 
         <Section title="Utseende">

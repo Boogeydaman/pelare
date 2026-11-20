@@ -88,19 +88,6 @@ export function Empty({ children }: { children: ReactNode }) {
   return <p className="border-t border-rule py-4 text-[15px] text-ink2">{children}</p>;
 }
 
-/** Placeholder illustration for exercises until real figures exist. */
-export function Figure({ kind, label }: { kind: Kind; label: string }) {
-  return (
-    <div className="flex aspect-[4/3] w-full items-center justify-center rounded-3xl" style={{ background: color(kind, 0.1) }} role="img" aria-label={`Bild: ${label}`}>
-      <svg viewBox="0 0 120 120" className="h-2/3" aria-hidden="true">
-        <g fill="none" stroke={color(kind)} strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="60" cy="22" r="9" />
-          <path d="M60 32 L60 70 M60 42 L38 58 M60 42 L82 58 M60 70 L44 104 M60 70 L76 104" />
-        </g>
-      </svg>
-    </div>
-  );
-}
 
 /** Horizontal bars against a target line, e.g. weekly sets per muscle. */
 export function Bars({ bars, kind }: { bars: NonNullable<Metric['bars']>; kind: Kind }) {

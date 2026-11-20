@@ -1,10 +1,12 @@
-import { Minus, Plus } from 'lucide-react';
+import { Info, Minus, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fmtClock, fmtNum, vibrate } from '../../core/format';
 import type { ExerciseResult, Feel, StrengthItem } from '../../core/types';
 import { Dim, ON, ON_DIM, ON_LINE, OnButton, RoundButton } from '../../shared/player/parts';
 import { useCountdown } from '../../shared/ui/hooks';
-import { Ring } from '../../shared/ui/kit';
+import { Figure } from '../../shared/ui/Figure';
+import { Ring, Sheet } from '../../shared/ui/kit';
+import { HOWTO } from './howto';
 import type { PlayerProps } from '../types';
 
 interface Saved { ex: number; set: number; phase: 'work' | 'feel'; kg: number; reps: number; results: ExerciseResult[] }
@@ -32,6 +34,7 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
     try { localStorage.setItem(KEY, JSON.stringify({ key: storageKey, state: { ex, set, phase: phase === 'rest' ? 'work' : phase, kg, reps, results } })); } catch { /* ignore */ }
   }, [storageKey, ex, set, phase, kg, reps, results]);
   const onFinish: typeof finishOuter = (data) => { try { localStorage.removeItem(KEY); } catch { /* ignore */ } finishOuter(data); };
+  const [help, setHelp] = useState(false);
   const rest = useCountdown(useCallback(() => { vibrate([200, 100, 200]); setPhase('work'); }, []));
   const it = items[ex];
   const totalSets = items.reduce((a, i) => a + i.sets, 0);
@@ -112,6 +115,11 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
         <button onClick={skip} className="min-h-[44px] text-[14px] underline underline-offset-4" style={{ color: ON_DIM }}>Hoppa över</button>
       </div>
       <h1 className="mt-1 font-serif text-title">{it.name}</h1>
+      {HOWTO[it.id] && (
+        <button onClick={() => setHelp(true)} className="mt-1 flex min-h-[40px] items-center gap-1.5 text-[15px] font-medium underline underline-offset-4" style={{ color: ON_DIM }}>
+          <Info size={16} aria-hidden="true" /> Hur gör man?
+        </button>
+      )}
       {it.last && <div className="num mt-2 text-[15px] font-medium">Förra gången: {it.last}</div>}
       <Dim className="mt-1">{it.cue}</Dim>
       {it.note && <div className="mt-3 rounded-2xl px-4 py-3 text-[14px] leading-snug" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>{it.note}</div>}
@@ -133,6 +141,17 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
       </div>
 
       <OnButton onClick={done}>Set {set + 1} klart</OnButton>
+
+      <Sheet open={help} onClose={() => setHelp(false)} title={it.name}>
+        <div className="pb-4">
+          <Figure anim={HOWTO[it.id]?.anim} kind="gym" label={it.name} />
+          <ol className="mt-4">
+            {HOWTO[it.id]?.how.map((t, i) => (
+              <li key={i} className="flex gap-4 border-t border-rule py-3 text-[16px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{i + 1}</span><span>{t}</span></li>
+            ))}
+          </ol>
+        </div>
+      </Sheet>
     </div>
   );
 }

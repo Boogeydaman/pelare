@@ -7,6 +7,7 @@ import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { EX, EXERCISES, GROUPS, MUSCLES, MUSCLE_NAME, type Exercise, type Need } from './exercises';
 import { PROGRAMS, PROGRAM_BY_ID } from './programs';
 import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } from './planner';
+import { HOWTO } from './howto';
 import { GymPlayer } from './Player';
 import { ExerciseProgress, GymExerciseList, gymRecords } from './progress';
 
@@ -26,7 +27,7 @@ function libraryItem(e: Exercise): LibraryItem {
   if (e.alt?.length) extra.push({ label: 'Ersätts av', value: e.alt.map(link).filter(Boolean).join(', ') });
   if (e.why) extra.push({ label: 'Varför', value: e.why });
   return {
-    id: e.id, name: e.name, group: e.group, tips: e.tips, extra,
+    id: e.id, name: e.name, group: e.group, tips: e.tips, extra, anim: HOWTO[e.id]?.anim, how: HOWTO[e.id]?.how,
     meta: `${e.needs.length ? e.needs.map((n) => NEED_NAME[n]).join(' + ') : 'Kroppsvikt'} · ${e.primary.map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}`,
   };
 }

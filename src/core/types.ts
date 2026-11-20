@@ -128,6 +128,8 @@ export interface LibraryItem {
   meta: string; // short line, e.g. "Bröst · skivstång"
   tips: string[];
   extra?: { label: string; value: string; to?: string }[];
+  anim?: string; // stick-figure animation key
+  how?: string[]; // step-by-step instructions
 }
 
 export interface QuickStart { id: string; label: string; hint: string; session?: PlannedSession; to?: string }

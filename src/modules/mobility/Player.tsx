@@ -4,17 +4,19 @@ import { vibrate } from '../../core/format';
 import type { HoldItem } from '../../core/types';
 import { Dim, OnButton, RoundButton } from '../../shared/player/parts';
 import { useCountdown } from '../../shared/ui/hooks';
+import { Figure } from '../../shared/ui/Figure';
 import { Ring } from '../../shared/ui/kit';
+import { STRETCH_ANIM } from './stretches';
 import type { PlayerProps } from '../types';
 
-interface Step { name: string; cue: string; seconds: number; label: string }
+interface Step { id: string; name: string; cue: string; seconds: number; label: string }
 const SWITCH = 6;
 
 export function MobilityPlayer({ plan, onProgress, onFinish }: PlayerProps) {
   const holds: HoldItem[] = plan.content.kind === 'mobility' ? plan.content.holds : [];
   const steps = useMemo<Step[]>(() => holds.flatMap((h) => Array.from({ length: h.rounds }, (_, r) =>
     (h.sides === 2 ? ['Vänster', 'Höger'] : ['']).map((side) => ({
-      name: h.name, cue: h.cue, seconds: h.seconds,
+      id: h.id, name: h.name, cue: h.cue, seconds: h.seconds,
       label: [h.rounds > 1 ? `Varv ${r + 1} av ${h.rounds}` : '', side].filter(Boolean).join(' · '),
     }))).flat()), [holds]);
   const [i, setI] = useState(0);
@@ -49,6 +51,8 @@ export function MobilityPlayer({ plan, onProgress, onFinish }: PlayerProps) {
       <Dim className="num">{phase === 'switch' ? 'Nästa' : `${i + 1} av ${steps.length}`}{cur.label ? ` · ${cur.label}` : ''}</Dim>
       <h1 className="mt-2 font-serif text-title">{cur.name}</h1>
       <Dim className="mt-2 text-[16px] leading-snug">{cur.cue}</Dim>
+
+      <div className="mx-auto mt-4 w-36"><Figure anim={STRETCH_ANIM[cur.id]} kind="mobility" label={cur.name} size="sm" onPillar /></div>
 
       <div className="flex flex-1 items-center justify-center py-6">
         <Ring progress={phase === 'ready' ? 1 : left / total} size={248}>

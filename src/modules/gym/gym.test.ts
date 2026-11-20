@@ -6,6 +6,9 @@ import { weeklySplit } from '../common';
 import { build, equipmentAt, nextTemplate, resolve, target, volume, weeklyTarget } from './planner';
 import { PROGRAMS } from './programs';
 import { gymRecords } from './progress';
+import { HOWTO } from './howto';
+import { ANIMS } from '../../shared/ui/poses';
+import { STRETCHES, STRETCH_ANIM } from '../mobility/stretches';
 
 const NOW = new Date('2026-11-20T17:00:00');
 const ago = (h: number) => new Date(NOW.getTime() - h * 3600_000).toISOString();
@@ -189,5 +192,19 @@ describe('På resa och veckans fördelning', () => {
       expect(run, `${d} dagar`).toBeGreaterThanOrEqual(1);
       if (d >= 3) expect(gym + run, `${d} dagar`).toBeLessThanOrEqual(d);
     }
+  });
+});
+
+describe('Instruktioner och figurer', () => {
+  it('varje gymövning har tre steg och en figur som finns', () => {
+    for (const e of EXERCISES) {
+      expect(HOWTO[e.id], e.id).toBeDefined();
+      expect(HOWTO[e.id].how.length, e.id).toBe(3);
+      expect(ANIMS[HOWTO[e.id].anim], `${e.id} → ${HOWTO[e.id].anim}`).toBeDefined();
+    }
+  });
+
+  it('varje stretch har en figur som finns', () => {
+    for (const s of STRETCHES) expect(ANIMS[STRETCH_ANIM[s.id]], `${s.id} → ${STRETCH_ANIM[s.id]}`).toBeDefined();
   });
 });

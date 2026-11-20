@@ -148,7 +148,7 @@ export function Sheet({ open, onClose, title, children }: { open: boolean; onClo
   if (!open) return null;
   return (
     <div className="fade fixed inset-0 z-50 flex items-end justify-center bg-black/40" onClick={onClose} role="dialog" aria-modal="true" aria-label={title}>
-      <div className="sheet safe-bottom w-full max-w-lg rounded-t-[28px] bg-raised px-6 pt-2" onClick={(e) => e.stopPropagation()}>
+      <div className="sheet safe-bottom max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-t-[28px] bg-raised px-6 pt-2 text-ink" onClick={(e) => e.stopPropagation()}>
         <div className="mx-auto mb-4 mt-1 h-1 w-10 rounded-full bg-rule" aria-hidden="true" />
         <div className="mb-5 flex items-start justify-between">
           <h2 className="font-serif text-[30px] leading-none">{title}</h2>
