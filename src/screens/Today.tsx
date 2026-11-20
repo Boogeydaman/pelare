@@ -2,6 +2,7 @@ import { ChevronRight, Play, Plus, Settings2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { coach, type TodayView } from '../core/coach';
+import { planWeek, type WeekPlan } from '../core/week';
 import { useCtx } from '../core/ctx';
 import { removeSampleData, saveCheckin, useActive } from '../core/db';
 import { fmtDayLong } from '../core/format';
@@ -25,9 +26,10 @@ export function Today() {
   const [peek, setPeek] = useState(false);
   const [pick, setPick] = useState<string | null>(null);
 
-  const view = useMemo(() => ctx && {
-    today: coach(ctx, MODULE_LIST),
-    week: Object.fromEntries(MODULE_LIST.map((m) => [m.id, m.weekly(ctx)])) as WeekProgress,
+  const view = useMemo(() => {
+    if (!ctx) return null;
+    const today = coach(ctx, MODULE_LIST);
+    return { today, plan: planWeek(ctx, MODULE_LIST, today), week: Object.fromEntries(MODULE_LIST.map((m) => [m.id, m.weekly(ctx)])) as WeekProgress };
   }, [ctx]);
   if (!ctx || !view) return null;
 
@@ -80,6 +82,8 @@ export function Today() {
           </div>
         </section>
       )}
+
+      <YourWeek plan={view.plan} />
 
       {view.today.notes.length > 0 && (
         <section className="mt-8 rounded-2xl bg-ink/[0.05] px-5 py-4">
@@ -165,6 +169,48 @@ function WhyToday({ kind }: { kind: PlannedSession['module'] }) {
           <span>Alla artiklar</span><ChevronRight size={18} strokeWidth={1.5} />
         </Link>
       </div>
+    </section>
+  );
+}
+
+const SHORT: Record<string, string> = { gym: 'Gym', run: 'Löp', other: 'Annat' };
+
+/** Din vecka: done and planned sessions day by day, and why today matters. */
+function YourWeek({ plan }: { plan: WeekPlan }) {
+  return (
+    <section className="mt-10">
+      <div className="flex items-baseline justify-between">
+        <Kicker>Din vecka</Kicker>
+        <Link to="/installningar#dagar" className="text-[13px] text-ink2 underline underline-offset-4">Träningsdagar</Link>
+      </div>
+      <p className={`mt-3 text-[16px] leading-snug ${plan.tone === 'tight' || plan.tone === 'over' ? 'font-medium' : ''}`}>{plan.message}</p>
+      <ol className="mt-4 grid grid-cols-7 gap-1" aria-label="Veckans plan">
+        {plan.days.map((d) => {
+          const main = [...d.done.filter((m) => m !== 'mobility').map((m) => ({ m, done: true })), ...d.planned.map((m) => ({ m, done: false }))];
+          const words = [...main.map((x) => `${x.done ? 'gjort' : 'planerat'}: ${MODULE_NAME[x.m]}`), d.mobility ? `stretch ${d.mobility === 'done' ? 'gjord' : 'planerad'}` : ''].filter(Boolean).join(', ');
+          return (
+            <li key={d.index} aria-label={`${d.label}${d.today ? ' (i dag)' : ''}: ${words || (d.past ? 'inget' : 'vila')}`}
+              className={`flex min-h-[92px] flex-col items-center gap-1.5 rounded-2xl px-0.5 py-2 ${d.today ? 'bg-ink/[0.07]' : ''}`}>
+              <span className={`text-[12px] ${d.today ? 'font-semibold text-ink' : 'text-ink2'}`}>{d.today ? 'I dag' : d.label}</span>
+              {main.map((x, i) => {
+                const c = x.m === 'other' ? 'rgb(var(--ink2))' : color(x.m);
+                return (
+                  <span key={i} className="flex h-6 w-full items-center justify-center rounded-full text-[11px] font-semibold"
+                    style={x.done ? { background: c, color: 'rgb(var(--onpillar))' } : { border: `1.5px solid ${c}`, color: c }}>
+                    {SHORT[x.m] ?? '·'}
+                  </span>
+                );
+              })}
+              {!main.length && <span className="flex h-6 items-center text-[11px] text-ink2">{d.past ? '–' : 'Vila'}</span>}
+              {d.mobility && (
+                <span className="mt-auto h-2 w-2 rounded-full" aria-hidden="true"
+                  style={d.mobility === 'done' ? { background: color('mobility') } : { border: `1.5px solid ${color('mobility')}` }} />
+              )}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-2 text-[12px] text-ink2">Fylld = gjort · ram = planerat · prick = stretch. Planen räknas om varje dag – missar du ett pass flyttas det.</p>
     </section>
   );
 }

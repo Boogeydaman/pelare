@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { exportAll, importAll, removeSampleData, resetAll, saveProfile } from '../core/db';
 import { useCtx } from '../core/ctx';
 import { useTheme } from '../core/theme';
@@ -10,8 +10,9 @@ import { Page, Row, Section } from '../shared/layout/page';
 import { InstallCard } from '../shared/ui/InstallCard';
 import { OptionList, Primary, Segmented, Sheet } from '../shared/ui/kit';
 import { GOAL_OPTIONS } from './Onboarding';
+import { WEEKDAYS } from '../core/week';
 
-type Edit = keyof Goals | 'days' | 'places' | 'equipment' | 'reset' | null;
+type Edit = keyof Goals | 'days' | 'weekdays' | 'places' | 'equipment' | 'reset' | null;
 const EQUIP: { value: Equip; label: string }[] = [
   { value: 'dumbbell', label: 'Hantlar' }, { value: 'kettlebell', label: 'Kettlebell' }, { value: 'band', label: 'Gummiband' },
   { value: 'pullup_bar', label: 'Chinsstång' }, { value: 'bench', label: 'Bänk' },
@@ -21,7 +22,8 @@ export function Settings() {
   const ctx = useCtx();
   const nav = useNavigate();
   const [theme, setTheme] = useTheme();
-  const [edit, setEdit] = useState<Edit>(null);
+  const loc = useLocation();
+  const [edit, setEdit] = useState<Edit>(loc.hash === '#dagar' ? 'weekdays' : null);
   const [msg, setMsg] = useState('');
   const file = useRef<HTMLInputElement>(null);
   if (!ctx) return null;
@@ -47,6 +49,7 @@ export function Settings() {
 
         <Section title="Träning">
           <Row title="Dagar per vecka" right={String(p.daysPerWeek)} onClick={() => setEdit('days')} />
+          <Row title="Träningsdagar" right={p.trainingDays?.length ? [...p.trainingDays].sort().map((d) => WEEKDAYS[d]).join(', ') : 'Automatiskt'} onClick={() => setEdit('weekdays')} />
           <Row title="Var du tränar" right={p.places.map((x) => (x === 'gym' ? 'Gym' : 'Hemma')).join(', ')} onClick={() => setEdit('places')} />
           {p.places.includes('home') && <Row title="Utrustning hemma" right={p.homeEquipment.length ? `${p.homeEquipment.length} saker` : 'Ingen'} onClick={() => setEdit('equipment')} />}
         </Section>
@@ -88,6 +91,25 @@ export function Settings() {
       ))}
       <Sheet open={edit === 'days'} onClose={() => setEdit(null)} title="Dagar per vecka">
         <div className="pb-4"><OptionList value={p.daysPerWeek} options={[2, 3, 4, 5, 6].map((d) => ({ value: d, label: `${d} dagar` }))} onChange={(v) => { save({ daysPerWeek: v }); setEdit(null); }} /></div>
+      </Sheet>
+      <Sheet open={edit === 'weekdays'} onClose={() => setEdit(null)} title="Träningsdagar">
+        <div className="pb-4">
+          <p className="mb-4 text-[15px] leading-snug text-ink2">Välj dagar som brukar passa för gym och löpning. Planen lägger passen där, och använder andra dagar bara om veckan inte går ihop. Inga valda dagar = passen sprids ut jämnt.</p>
+          <div className="grid grid-cols-7 gap-1.5">
+            {WEEKDAYS.map((label, i) => {
+              const on = p.trainingDays?.includes(i) ?? false;
+              return (
+                <button key={i} aria-pressed={on} onClick={() => save({ trainingDays: toggle(p.trainingDays ?? [], i).sort() })}
+                  className={`h-12 rounded-2xl text-[14px] font-medium ${on ? 'bg-ink text-paper' : 'bg-ink/[0.06]'}`}>{label}</button>
+              );
+            })}
+          </div>
+          <p className="mt-3 text-[13px] text-ink2">{p.trainingDays?.length ? `${p.trainingDays.length} dagar valda. Du har ${p.daysPerWeek} träningsdagar i veckan.` : 'Automatiskt'}</p>
+          <div className="mt-4 flex gap-3">
+            {!!p.trainingDays?.length && <button onClick={() => save({ trainingDays: [] })} className="h-12 flex-1 rounded-full bg-ink/[0.06] text-[15px] font-medium">Rensa</button>}
+            <div className="flex-1"><Primary onClick={() => setEdit(null)}>Klar</Primary></div>
+          </div>
+        </div>
       </Sheet>
       <Sheet open={edit === 'places'} onClose={() => setEdit(null)} title="Var du tränar">
         <div className="pb-4"><OptionList<Place> multi value={p.places} options={[{ value: 'gym', label: 'Gym' }, { value: 'home', label: 'Hemma' }]}

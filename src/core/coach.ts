@@ -111,6 +111,17 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   const aerobicMin = thisWeek.filter((l) => l.module === 'run' || (l.module === 'other' && ['cardio', 'sport', 'walk'].includes(l.type)) || l.type === 'animal_cond').reduce((a, l) => a + l.minutes, 0);
   const aerobicBehind = aerobicMin < 150 && (150 - aerobicMin) / Math.max(1, daysLeft) > 25;
 
+  // Chosen training days: gym and running move to those days when the week still fits.
+  const fixed = ctx.profile.trainingDays ?? [];
+  const todayIdx = (now.getDay() + 6) % 7;
+  const mainLeft = week.filter((w) => w.module === 'gym' || w.module === 'run').reduce((a, w) => a + Math.max(0, w.target - w.done), 0);
+  const fixedAfter = fixed.filter((d) => d > todayIdx).length;
+  const offDay = fixed.length > 0 && !fixed.includes(todayIdx) && mainLeft <= fixedAfter;
+  const onDay = fixed.length > 0 && fixed.includes(todayIdx);
+  // No slack left in the week: gym and running go before stretching (which fits as an add-on).
+  const noSlack = !comeback && mainLeft > 0 && mainLeft >= daysLeft;
+  if (offDay && mainLeft > 0) notes.push({ text: 'I dag är ingen av dina valda träningsdagar. Veckans pass ryms ändå på dem, så i dag blir det lugnare.' });
+
   type Scored = { s: PlannedSession; score: number; blocked?: string };
   const scored: Scored[] = modules.flatMap((m) => {
     const w = m.weekly(ctx);
@@ -133,6 +144,10 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
       if (comeback && hard) score -= 0.3;
       if (doneToday) score -= 0.7;
       if (m.id === 'run' && aerobicBehind) score += 0.15;
+      if (m.id === 'gym' || m.id === 'run') {
+        if (offDay) score -= 0.5; else if (onDay && left > 0) score += 0.15;
+        if (noSlack && left > 0) score += 0.5;
+      }
       if (checkin.feeling === 'pigg' && hard) score += 0.08;
       return { s: { ...s, minutes: Math.min(s.minutes, checkin.minutes) }, score, blocked };
     });

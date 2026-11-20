@@ -30,6 +30,8 @@ export interface Profile {
   homeEquipment: Equip[];
   enrollments: Record<ModuleId, Enrollment>;
   mobilityFocus?: MobilityFocus[];
+  /** Preferred days for gym and running, 0 = Monday. Empty = spread automatically. */
+  trainingDays?: number[];
   createdAt: string;
 }
 
