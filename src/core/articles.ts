@@ -120,6 +120,10 @@ export const ARTICLES: Article[] = [
     title: 'Löpning: mest lugnt, lite hårt',
     lead: 'De flesta springer för fort på de lugna passen och för lugnt på de hårda. Pelare gör tvärtom.',
     sections: [
+      { h: 'Från noll: gå-spring', p: [
+        'Som nybörjare börjar du med korta joggintervaller och gångpauser, tre pass i veckan med vilodag emellan – samma upplägg som NHS Couch to 5K [34] och svenska nybörjarguider [35]. Pelare tar 20 små steg till 30 minuter utan paus, ungefär sju veckor.',
+        'Nya löpare som ökar mycket på kort tid får oftare belastningsskador [33]. Därför går du bara vidare när passet kändes lagom, och de sista stegen är extra små.',
+      ] },
       { h: '80/20', p: [
         'Ungefär 80 % av löptiden i pratbart tempo och 20 % hårdare ger lite bättre kondition än andra fördelningar [17]. Lugna pass bygger uthålligheten utan att slita.',
       ] },
@@ -133,7 +137,7 @@ export const ARTICLES: Article[] = [
         'Styrketräning förbättrar löpekonomin [20], och löpning hindrar inte muskeltillväxt eller styrka nämnvärt [15]. Därför finns minst två styrkepass i veckan även när löpning är målet.',
       ] },
     ],
-    sources: [15, 17, 18, 19, 20],
+    sources: [15, 17, 18, 19, 20, 33, 34, 35],
   },
   {
     id: 'rorlighet', group: 'Pelarna', topic: 'mobility', minutes: 3, kicker: 'Rörlighet',

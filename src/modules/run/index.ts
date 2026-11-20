@@ -8,7 +8,7 @@ import { RunPlayer } from './Player';
 import { HARD_TYPES, STAGES, easy, easyShare, guard, km, next, runs, stage, strides, tempo, test5k } from './planner';
 
 const PROGRAMS: ProgramOption[] = [
-  { id: 'start', name: 'Från noll till 30 min', description: 'Gå-spring i elva steg tills du springer 30 minuter utan paus. Nästa steg låses upp när passet känns lagom.', weeks: 8, perWeek: 3 },
+  { id: 'start', name: 'Från noll till 30 min', description: 'Gå-spring i 20 små steg, tre pass i veckan, tills du joggar 30 minuter utan paus – ungefär sju veckor. Nästa steg låses upp när passet känns lagom, annars kör du samma steg igen.', weeks: 7, perWeek: 3 },
   { id: '5k', name: '5 km', description: 'Två lugna pass och ett intervallpass i veckan. Långpasset växer i små steg.', weeks: 8, perWeek: 3 },
   { id: '10k', name: '10 km', description: 'Mer lugn volym, ett intervallpass och ett långpass i veckan.', weeks: 10, perWeek: 3 },
   { id: 'maintain', name: 'Underhåll', description: 'Två lugna pass i veckan för att behålla formen.', weeks: 4, perWeek: 2 },
@@ -75,7 +75,7 @@ export const run: TrainingModule = {
       program: p, week, label: p.id === 'start' && st !== 'done' ? `Steg ${st + 1} av ${STAGES.length}` : `Vecka ${week} av ${p.weeks}`,
       thisWeek: titles.map((title, i) => ({ title, done: i < done })),
       milestones: p.id === 'start'
-        ? [3, 6, 9, 11].map((n) => ({ label: `${STAGES[n - 1].run} min`, done: st === 'done' || st >= n }))
+        ? [5, 10, 15, 20].map((n) => ({ label: `${STAGES[n - 1].run} min`, done: st === 'done' || st >= n }))
         : [{ label: 'Bas', done: week > 2 }, { label: 'Volym', done: week > 4 }, { label: 'Fart', done: week > 6 }, { label: 'Test', done: week >= p.weeks }],
     };
   },
@@ -90,7 +90,7 @@ export const run: TrainingModule = {
     const st = stage(ctx.profile, ctx.logs);
     return [
       st !== 'done'
-        ? { id: 'stage', label: 'Gå-spring', value: `${st + 1}`, unit: `av ${STAGES.length}`, change: `${STAGES[st].run} min löpning åt gången` }
+        ? { id: 'stage', label: 'Gå-spring', value: `${st + 1}`, unit: `av ${STAGES.length}`, change: `${String(STAGES[st].run).replace('.', ',')} min löpning åt gången` }
         : { id: 'longest', label: 'Längsta pass, 30 dagar', value: g.assumed ? '–' : String(g.longestMin), unit: 'min', change: g.assumed ? undefined : `Nästa får vara högst ${g.maxMin} min` },
       { id: 'minutes', label: 'Löptid per vecka', value: String(minW[minW.length - 1]), unit: 'min', series: minW },
       { id: 'km', label: 'Km per vecka', value: fmt1(kmW[kmW.length - 1]), unit: 'km', series: kmW },

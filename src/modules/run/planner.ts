@@ -7,12 +7,21 @@ import type { ModuleCtx } from '../types';
 const DAY = 864e5;
 export const HARD_TYPES = ['intervals', 'tempo', 'long', 'test'];
 
-/** Walk-run stages: run minutes, walk minutes, repetitions. Next stage unlocks when the last one did not feel heavy. */
+/**
+ * Walk-run stages: run minutes, walk minutes, repetitions. One step per session that did not feel heavy,
+ * three sessions a week with a rest day between → about seven weeks to 30 minutes without a break.
+ * Built from the 6-week Joggingguide [35] and NHS Couch to 5K (9 weeks) [34], with smaller steps at the end:
+ * total running time grows gradually (novices: well under 30 % per two weeks [33]) and the longest continuous
+ * run never jumps far past the last one [19].
+ */
 export const STAGES = [
-  { run: 1, walk: 2, reps: 8 }, { run: 2, walk: 2, reps: 6 }, { run: 3, walk: 2, reps: 5 }, { run: 5, walk: 2, reps: 4 },
-  { run: 7, walk: 2, reps: 3 }, { run: 10, walk: 2, reps: 2 }, { run: 12, walk: 1, reps: 2 }, { run: 15, walk: 1, reps: 2 },
-  { run: 20, walk: 0, reps: 1 }, { run: 25, walk: 0, reps: 1 }, { run: 30, walk: 0, reps: 1 },
+  { run: 1, walk: 2, reps: 8 }, { run: 1.5, walk: 2, reps: 6 }, { run: 2, walk: 2, reps: 5 }, { run: 2, walk: 1.5, reps: 6 },
+  { run: 3, walk: 2, reps: 4 }, { run: 3, walk: 1.5, reps: 5 }, { run: 4, walk: 2, reps: 4 }, { run: 5, walk: 2, reps: 3 },
+  { run: 5, walk: 1.5, reps: 4 }, { run: 6, walk: 1.5, reps: 3 }, { run: 8, walk: 2, reps: 3 }, { run: 10, walk: 2, reps: 2 },
+  { run: 12, walk: 2, reps: 2 }, { run: 15, walk: 2, reps: 2 }, { run: 18, walk: 0, reps: 1 }, { run: 20, walk: 0, reps: 1 },
+  { run: 22, walk: 0, reps: 1 }, { run: 25, walk: 0, reps: 1 }, { run: 28, walk: 0, reps: 1 }, { run: 30, walk: 0, reps: 1 },
 ];
+const minText = (m: number) => (Number.isInteger(m) ? String(m) : String(m).replace('.', ','));
 
 export const runs = (logs: SessionLog[]) => logs.filter((l) => l.module === 'run');
 export const km = (l: SessionLog) => (l.data?.kind === 'run' ? l.data.distanceKm ?? 0 : 0);
@@ -61,9 +70,10 @@ export function walkRun(st: number): PlannedSession {
   const segs = [seg('Rask promenad', 5, 'gå'),
     ...Array.from({ length: s.reps }, (_, i) => [seg(s.reps > 1 ? `Spring ${i + 1} av ${s.reps}` : 'Spring utan paus', s.run, 'lugnt'), ...(s.walk && i < s.reps - 1 ? [seg('Gå', s.walk, 'gå')] : [])]).flat(),
     seg('Gå ner i varv', 3, 'gå')];
-  return plan('walkrun', 'Gå-spring', segs, s.reps > 1 ? `${s.reps} × ${s.run} min löpning` : `${s.run} min utan paus`, [
-    `Steg ${st + 1} av ${STAGES.length}. Nästa steg låses upp när passet känns lätt eller lagom.`,
-    'Spring så lugnt att du kan prata. Gångpauserna är en del av passet.',
+  return plan('walkrun', 'Gå-spring', segs, s.reps > 1 ? `${s.reps} × ${minText(s.run)} min löpning` : `${s.run} min utan paus`, [
+    `Steg ${st + 1} av ${STAGES.length}. Nästa steg låses upp när passet känns lätt eller lagom – kändes det tungt kör du samma steg igen.`,
+    'Jogga så lugnt att du kan prata. Gångpauserna är en del av passet, inte ett misslyckande.',
+    'Tre pass i veckan med en vilodag emellan, så hinner kroppen anpassa sig [34].',
   ]);
 }
 
@@ -124,7 +134,11 @@ export function next(ctx: ModuleCtx): PlannedSession {
     // After two weeks off, repeat the previous walk-run step (H).
     const s = gap >= 14 ? Math.max(0, st - 1) : st;
     const p = walkRun(s);
-    return gap >= 14 ? { ...p, reasons: [{ text: `${gap} dagar sedan senaste löppasset – du kör förra steget igen innan du går vidare.` }, ...p.reasons] } : p;
+    if (gap >= 14) return { ...p, reasons: [{ text: `${gap} dagar sedan senaste löppasset – du kör förra steget igen innan du går vidare.` }, ...p.reasons] };
+    // A rest day between walk-run sessions: yesterday's session makes today's a weaker suggestion.
+    const yesterday = lastRun && ctx.now.getTime() - lastRun < 1.5 * DAY && new Date(lastRun).toDateString() !== ctx.now.toDateString();
+    if (yesterday) return { ...p, penalty: 0.35, reasons: [{ text: 'Du sprang i går. Helst en vilodag emellan – men det går bra i dag om det är enda chansen.' }, ...p.reasons] };
+    return p;
   }
   if (gap >= 10) {
     const g0 = guard(ctx.profile, ctx.logs, ctx.now);

@@ -40,6 +40,25 @@ describe('Löpning', () => {
     expect(stage(profile('start'), all)).toBe('done');
   });
 
+  it('nybörjarprogrammet: små steg till 30 min utan paus', () => {
+    expect(STAGES[0].run).toBe(1);
+    expect(STAGES[STAGES.length - 1]).toEqual({ run: 30, walk: 0, reps: 1 });
+    for (let i = 1; i < STAGES.length; i++) {
+      const tot = (s: typeof STAGES[number]) => s.run * s.reps;
+      // Total running time never jumps more than ~30 % from one step to the next [33], and the longest
+      // continuous stretch grows by at most 25 % once running without breaks [19].
+      expect(tot(STAGES[i]) / tot(STAGES[i - 1]), `steg ${i + 1}`).toBeLessThanOrEqual(1.34);
+      if (STAGES[i - 1].reps === 1) expect(STAGES[i].run / STAGES[i - 1].run).toBeLessThanOrEqual(1.25);
+    }
+  });
+
+  it('gå-spring dagen efter ett pass blir ett svagare förslag (vilodag emellan)', () => {
+    const y = next(ctx('start', [run(1, 'walkrun', 25, undefined, 2)]));
+    expect(y.penalty ?? 0).toBeGreaterThan(0);
+    const two = next(ctx('start', [run(2, 'walkrun', 25, undefined, 2)]));
+    expect(two.penalty ?? 0).toBe(0);
+  });
+
   it('ett intervallpass i veckan, inte två', () => {
     const base = [run(10, 'easy', 30), run(12, 'easy', 30), run(14, 'easy', 30)];
     const weekStart = new Date(NOW); weekStart.setDate(NOW.getDate() - ((NOW.getDay() + 6) % 7));
