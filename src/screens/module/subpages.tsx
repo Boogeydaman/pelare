@@ -161,16 +161,6 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
     <Page kicker={item.group} kind={m.id} title={item.name} back={`/${m.slug}/bibliotek`}>
       <Figure anim={item.anim} kind={m.id} label={item.name} />
       <p className="mt-4 text-[15px] text-ink2">{item.meta}</p>
-      {item.extra && (
-        <dl className="mt-6">
-          {item.extra.map((x) => (
-            <div key={x.label} className="grid grid-cols-[6.5rem_1fr] gap-3 border-t border-rule py-3 text-[15px]">
-              <dt className="text-ink2">{x.label}</dt>
-              <dd>{x.to ? <Link to={`/${m.slug}/bibliotek/${x.to}`} replace className="font-medium underline underline-offset-4">{x.value}</Link> : x.value}</dd>
-            </div>
-          ))}
-        </dl>
-      )}
       <Section title="Så gör du">
         <ol>
           {(item.how ?? item.tips).map((t, i) => (
@@ -184,6 +174,16 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
             {item.tips.map((t, i) => <li key={i} className="border-t border-rule py-2.5 text-[15px] text-ink2">{t}</li>)}
           </ul>
         </Section>
+      )}
+      {item.extra && (
+        <dl className="mt-8">
+          {item.extra.map((x) => (
+            <div key={x.label} className="grid grid-cols-[6.5rem_1fr] gap-3 border-t border-rule py-3 text-[15px]">
+              <dt className="text-ink2">{x.label}</dt>
+              <dd>{x.to ? <Link to={`/${m.slug}/bibliotek/${x.to}`} replace className="font-medium underline underline-offset-4">{x.value}</Link> : x.value}</dd>
+            </div>
+          ))}
+        </dl>
       )}
       {m.LibraryExtra && <m.LibraryExtra id={item.id} />}
     </Page>

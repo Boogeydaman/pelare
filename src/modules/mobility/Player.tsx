@@ -1,11 +1,12 @@
-import { Pause, Play, SkipForward } from 'lucide-react';
+import { Info, Pause, Play, SkipForward } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { vibrate } from '../../core/format';
 import type { HoldItem } from '../../core/types';
-import { Dim, OnButton, RoundButton } from '../../shared/player/parts';
+import { Dim, ON_DIM, OnButton, RoundButton } from '../../shared/player/parts';
 import { useCountdown } from '../../shared/ui/hooks';
 import { Figure } from '../../shared/ui/Figure';
-import { Ring } from '../../shared/ui/kit';
+import { Ring, Sheet } from '../../shared/ui/kit';
+import { STRETCH_HOW } from './howto';
 import { STRETCH_ANIM } from './stretches';
 import type { PlayerProps } from '../types';
 
@@ -21,6 +22,7 @@ export function MobilityPlayer({ plan, onProgress, onFinish }: PlayerProps) {
     }))).flat()), [holds]);
   const [i, setI] = useState(0);
   const [phase, setPhase] = useState<'ready' | 'hold' | 'switch'>('ready');
+  const [help, setHelp] = useState(false);
   const finish = useCallback((n: number) => onFinish({ kind: 'mobility', holdsDone: n }), [onFinish]);
 
   const onEnd = useCallback(() => {
@@ -51,8 +53,26 @@ export function MobilityPlayer({ plan, onProgress, onFinish }: PlayerProps) {
       <Dim className="num">{phase === 'switch' ? 'Nästa' : `${i + 1} av ${steps.length}`}{cur.label ? ` · ${cur.label}` : ''}</Dim>
       <h1 className="mt-2 font-serif text-title">{cur.name}</h1>
       <Dim className="mt-2 text-[16px] leading-snug">{cur.cue}</Dim>
+      {STRETCH_HOW[cur.id] && (
+        <button onClick={() => setHelp(true)} className="mt-1 flex min-h-[40px] items-center gap-1.5 text-[15px] font-medium underline underline-offset-4" style={{ color: ON_DIM }}>
+          <Info size={16} aria-hidden="true" /> Hur gör man?
+        </button>
+      )}
 
-      <div className="mx-auto mt-4 w-36"><Figure anim={STRETCH_ANIM[cur.id]} kind="mobility" label={cur.name} size="sm" onPillar /></div>
+      <button onClick={() => setHelp(true)} className="mx-auto mt-2 block w-40" aria-label={`Visa hur man gör ${cur.name.toLowerCase()}`}>
+        <Figure anim={STRETCH_ANIM[cur.id]} kind="mobility" label={cur.name} size="sm" onPillar />
+      </button>
+
+      <Sheet open={help} onClose={() => setHelp(false)} title={cur.name}>
+        <div className="pb-4">
+          <Figure anim={STRETCH_ANIM[cur.id]} kind="mobility" label={cur.name} />
+          <ol className="mt-4">
+            {STRETCH_HOW[cur.id]?.how.map((t, i) => (
+              <li key={i} className="flex gap-4 border-t border-rule py-3 text-[16px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{i + 1}</span><span>{t}</span></li>
+            ))}
+          </ol>
+        </div>
+      </Sheet>
 
       <div className="flex flex-1 items-center justify-center py-6">
         <Ring progress={phase === 'ready' ? 1 : left / total} size={248}>

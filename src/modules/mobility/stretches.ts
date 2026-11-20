@@ -1,3 +1,4 @@
+import { STRETCH_HOW } from './howto';
 // Stretch and movement library. Sources: docs/kunskap/stretch-transkript.md (level D) and rules [21][22][23][24].
 
 export type Area = 'neck' | 'shoulders' | 'chest' | 'spine' | 'hip_flexors' | 'glutes' | 'hamstrings' | 'adductors' | 'calves' | 'wrists';
@@ -88,15 +89,8 @@ export const STRETCHES: Stretch[] = [
 
 export const STRETCH: Record<string, Stretch> = Object.fromEntries(STRETCHES.map((s) => [s.id, s]));
 
-/** Which stick-figure pose shows each stretch. */
-export const STRETCH_ANIM: Record<string, string> = {
-  upper_trap: 'neck', head_roll: 'neck', chest_opener: 'arm_stretch', doorway: 'arm_stretch', cross_body: 'arm_stretch',
-  lat_stretch: 'child', wall_slide: 'arm_stretch', open_book: 'lying_twist', cat_cow: 'catcow', childs_pose: 'child',
-  lumbar_rot: 'lying_twist', side_stretch: 'stand', seated_twist: 'straddle', worlds_greatest: 'stretch_lunge',
-  hip_flexor: 'stretch_lunge', couch: 'stretch_lunge', flexor_glute: 'stretch_lunge', figure_four: 'lying_ham', pigeon: 'stretch_lunge',
-  ninety_ninety: 'straddle', frog: 'child', supine_ham: 'lying_ham', half_split: 'stretch_lunge', split_slide: 'stretch_lunge',
-  elephant_walk: 'fold', forward_fold: 'fold', pancake: 'straddle', butterfly: 'straddle', side_lunge: 'deep_squat', cossack: 'deep_squat',
-  knee_wall: 'stretch_lunge', calf_wall: 'stretch_lunge', down_dog: 'pike', finger_pushup: 'crawl', bear_squat: 'deep_squat',
-  cat_crawl: 'crawl', frog_hop: 'deep_squat', bear_walk: 'pike', monkey: 'deep_squat', crab_walk: 'bridge', horse_walk: 'deep_squat',
-  half_duck: 'deep_squat', duck_lunge: 'lunge', duck_walk: 'deep_squat',
-};
+// Clear one-line cues for the session player come from the step-by-step instructions.
+for (const s of STRETCHES) if (STRETCH_HOW[s.id]) s.cue = STRETCH_HOW[s.id].cue;
+
+/** Each stretch has its own animation with the same id (src/shared/ui/poses.ts). */
+export const STRETCH_ANIM: Record<string, string> = Object.fromEntries(STRETCHES.map((s) => [s.id, s.id]));

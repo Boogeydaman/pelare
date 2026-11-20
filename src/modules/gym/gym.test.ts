@@ -8,6 +8,9 @@ import { PROGRAMS } from './programs';
 import { gymRecords } from './progress';
 import { HOWTO } from './howto';
 import { ANIMS } from '../../shared/ui/poses';
+import { placed } from '../../shared/ui/skeleton';
+import { frameAt } from '../../shared/ui/Figure';
+import { STRETCH_HOW } from '../mobility/howto';
 import { STRETCHES, STRETCH_ANIM } from '../mobility/stretches';
 
 const NOW = new Date('2026-11-20T17:00:00');
@@ -204,7 +207,24 @@ describe('Instruktioner och figurer', () => {
     }
   });
 
-  it('varje stretch har en figur som finns', () => {
-    for (const s of STRETCHES) expect(ANIMS[STRETCH_ANIM[s.id]], `${s.id} → ${STRETCH_ANIM[s.id]}`).toBeDefined();
+  it('varje stretch har en egen figur och steg-för-steg-instruktioner', () => {
+    for (const s of STRETCHES) {
+      expect(ANIMS[STRETCH_ANIM[s.id]], `${s.id} → ${STRETCH_ANIM[s.id]}`).toBeDefined();
+      expect(STRETCH_HOW[s.id]?.how.length ?? 0, s.id).toBeGreaterThanOrEqual(3);
+      expect(s.cue, s.id).toBe(STRETCH_HOW[s.id].cue);
+    }
+  });
+
+  it('alla figurer går att rita i varje läge och håller sig i bild', () => {
+    for (const [k, a] of Object.entries(ANIMS)) {
+      for (let ph = 0; ph < 1; ph += 0.05) {
+        const { i, j, t } = frameAt(a, ph);
+        const { pose } = placed(a, i, j, t);
+        for (const [joint, [x, y]] of Object.entries(pose)) {
+          expect(Number.isFinite(x) && Number.isFinite(y), `${k} ${joint}`).toBe(true);
+          expect(x > -10 && x < 130 && y > -14 && y < 116, `${k} ${joint} (${x.toFixed(0)}, ${y.toFixed(0)}) @${ph.toFixed(2)}`).toBe(true);
+        }
+      }
+    }
   });
 });

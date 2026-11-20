@@ -7,6 +7,7 @@ import { distinctDays, fmt1, logsOf, thisWeek, weeklySeries } from '../common';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { FocusPicker } from './FocusPicker';
 import { FOCUS_AREAS, FOCUS_NAME, areaSeconds, build, focusOf, hold, minutesOf, sessionsDone, targets } from './planner';
+import { STRETCH_HOW } from './howto';
 import { MobilityPlayer } from './Player';
 import { AREA_NAME, GROUPS, STRETCH, STRETCHES, STRETCH_ANIM, type Stretch } from './stretches';
 
@@ -55,10 +56,11 @@ function libraryItem(s: Stretch): LibraryItem {
   if (s.easier) extra.push({ label: 'Lättare', value: STRETCH[s.easier].name, to: s.easier });
   if (s.harder) extra.push({ label: 'Svårare', value: STRETCH[s.harder].name, to: s.harder });
   if (s.why) extra.push({ label: 'Varför', value: s.why });
-  const how = s.kind === 'statisk'
-    ? [s.cue, `Håll 30–45 sekunder${s.sides === 2 ? ', byt sida' : ''}. Det ska dra, aldrig göra ont.`, 'Andas lugnt och låt musklerna slappna av – sjunk lite djupare för varje utandning.']
-    : s.kind === 'dynamisk' ? [s.cue, 'Rör dig lugnt och kontrollerat i 30–40 sekunder.', 'Öka rörelsen lite för varje repetition.']
-    : [s.cue, 'Ta ungefär tio steg framåt och tio tillbaka.', 'Gå långsamt första varvet. Rör dig fortare när det känns stabilt.'];
+  const timing = s.kind === 'statisk'
+    ? `Håll 30–45 sekunder${s.sides === 2 ? ' per sida' : ''}. Det ska dra, aldrig göra ont – andas lugnt och sjunk lite djupare för varje utandning.`
+    : s.kind === 'dynamisk' ? 'Rör dig lugnt och kontrollerat i 30–40 sekunder, lite större rörelse för varje repetition.'
+    : 'Gå långsamt första varvet. Rör dig fortare när det känns stabilt.';
+  const how = [...(STRETCH_HOW[s.id]?.how ?? [s.cue]), timing];
   return { id: s.id, name: s.name, group: s.group, meta: `${s.kind.charAt(0).toUpperCase() + s.kind.slice(1)} · ${s.areas.map((a) => AREA_NAME[a].toLowerCase()).join(', ')}`, tips: s.tips, extra, how, anim: STRETCH_ANIM[s.id] };
 }
 

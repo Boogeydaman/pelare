@@ -1,3 +1,4 @@
+import { FigureSheet } from './dev/FigureSheet';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
 import { CtxProvider } from './core/ctx';
 import { useProfile } from './core/db';
@@ -34,6 +35,7 @@ const moduleRoutes: RouteObject[] = MODULE_LIST.flatMap((m) => [
 ]);
 
 const router = createHashRouter([
+  ...(import.meta.env.DEV ? [{ path: 'figurer', element: <FigureSheet /> }] : []),
   {
     element: <Root />,
     children: [
