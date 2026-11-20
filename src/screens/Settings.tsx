@@ -6,6 +6,7 @@ import type { Equip, Goals, Place } from '../core/types';
 import { FOCUS_NAME, focusOf } from '../modules/mobility/planner';
 import { MODULE_LIST } from '../modules/registry';
 import { Page, Row, Section } from '../shared/layout/page';
+import { InstallCard } from '../shared/ui/InstallCard';
 import { OptionList, Primary, Segmented, Sheet } from '../shared/ui/kit';
 import { GOAL_OPTIONS } from './Onboarding';
 
@@ -46,6 +47,11 @@ export function Settings() {
           <Row title="Dagar per vecka" right={String(p.daysPerWeek)} onClick={() => setEdit('days')} />
           <Row title="Var du tränar" right={p.places.map((x) => (x === 'gym' ? 'Gym' : 'Hemma')).join(', ')} onClick={() => setEdit('places')} />
           {p.places.includes('home') && <Row title="Utrustning hemma" right={p.homeEquipment.length ? `${p.homeEquipment.length} saker` : 'Ingen'} onClick={() => setEdit('equipment')} />}
+        </Section>
+
+        <Section title="App">
+          <div className="border-t border-rule pt-4"><InstallCard dismissible={false} /></div>
+          <p className="pt-3 text-[14px] text-ink2">Redan installerad? Då syns inget här. Din data ligger i telefonens lagring och skickas aldrig någonstans.</p>
         </Section>
 
         <Section title="Utseende">

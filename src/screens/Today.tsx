@@ -10,6 +10,7 @@ import type { CheckIn, Feeling, PlannedSession } from '../core/types';
 import { MODULE_LIST } from '../modules/registry';
 import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
+import { InstallCard } from '../shared/ui/InstallCard';
 import { Row } from '../shared/layout/page';
 import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -44,6 +45,8 @@ export function Today() {
         </Link>
         <IconButton ariaLabel="Inställningar" onClick={() => nav('/installningar')}><Settings2 size={22} strokeWidth={1.75} /></IconButton>
       </header>
+
+      <div className="mt-8"><InstallCard /></div>
 
       <section key={main.id} className="rise mt-12">
         <Kicker kind={main.module}>{main.id === view.today.primary.id ? 'Dagens pass' : 'Ditt val'} · {MODULE_NAME[main.module]}</Kicker>

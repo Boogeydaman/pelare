@@ -4,6 +4,7 @@ import { saveProfile } from '../core/db';
 import { seedSamples } from '../core/sample';
 import type { Equip, Goals, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
 import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
+import { InstallCard } from '../shared/ui/InstallCard';
 import { IconButton, Kicker, OptionList, Primary, color } from '../shared/ui/kit';
 
 export const GOAL_OPTIONS: { [K in ModuleId]: { value: Goals[K]; label: string; hint: string }[] } = {
@@ -79,6 +80,7 @@ export function Onboarding() {
             Gym, löpning och rörlighet – tre program, en plan.
           </p>
         </div>
+        <div className="mb-4"><InstallCard dismissible={false} /></div>
         <Primary onClick={next}>Kom igång</Primary>
       </div>
     );
