@@ -16,6 +16,9 @@ export interface Goals {
   mobility: 'front_split' | 'side_split' | 'hips' | 'general';
 }
 
+/** Extra mobility focus on top of the whole-body base. Empty = whole body only. */
+export type MobilityFocus = 'front_split' | 'side_split' | 'hips' | 'shoulders' | 'back' | 'ankles';
+
 export interface Enrollment { programId: string; startedAt: string }
 
 export interface Profile {
@@ -24,6 +27,7 @@ export interface Profile {
   places: Place[];
   homeEquipment: Equip[];
   enrollments: Record<ModuleId, Enrollment>;
+  mobilityFocus?: MobilityFocus[];
   createdAt: string;
 }
 

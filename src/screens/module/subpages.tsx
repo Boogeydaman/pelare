@@ -25,7 +25,8 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
   return (
     <Page kicker={m.name} kind={m.id} title={view.program.name} back={`/${m.slug}`}>
       <p className="text-[17px] leading-snug text-ink2">{view.program.description}</p>
-      <div className="num mt-3 text-[15px]">{view.label} · {view.program.perWeek} pass i veckan</div>
+      <div className="num mt-3 text-[15px]">{view.label} · {view.program.perWeek} {m.id === 'mobility' ? 'dagar' : 'pass'} i veckan</div>
+      {m.ProgramExtra && <m.ProgramExtra />}
 
       <Section title="Den här veckan">
         {view.thisWeek.map((s, i) => (
@@ -45,7 +46,7 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
         </ol>
       </Section>
 
-      <Section title="Byt program">
+      {m.programs.length > 1 && <Section title="Byt program">
         {m.programs.map((p) => (
           <button key={p.id} onClick={() => choose(p.id)} aria-pressed={p.id === current}
             className="flex w-full items-center justify-between gap-4 border-t border-rule py-4 text-left">
@@ -59,7 +60,7 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
             </span>
           </button>
         ))}
-      </Section>
+      </Section>}
     </Page>
   );
 }

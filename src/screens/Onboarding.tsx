@@ -2,7 +2,8 @@ import { ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { saveProfile } from '../core/db';
 import { seedSamples } from '../core/sample';
-import type { Equip, Goals, ModuleId, Place, Profile } from '../core/types';
+import type { Equip, Goals, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
+import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
 import { IconButton, Kicker, OptionList, Primary, color } from '../shared/ui/kit';
 
 export const GOAL_OPTIONS: { [K in ModuleId]: { value: Goals[K]; label: string; hint: string }[] } = {
@@ -33,12 +34,13 @@ const HEALTH = [
 const MODULE_TITLE: Record<ModuleId, [string, string]> = {
   gym: ['Gym', 'Vad vill du få ut av styrketräningen?'],
   run: ['Löpning', 'Vad är ditt löpmål?'],
-  mobility: ['Rörlighet', 'Vilket rörlighetsmål har du?'],
+  mobility: ['Rörlighet', 'Vill du lägga extra fokus på något?'],
 };
 
 export function Onboarding() {
   const [i, setI] = useState(0);
   const [goals, setGoals] = useState<Goals>({ gym: 'stronger', run: 'start', mobility: 'front_split' });
+  const [focus, setFocus] = useState<MobilityFocus[]>([]);
   const [days, setDays] = useState(4);
   const [places, setPlaces] = useState<Place[]>(['gym']);
   const [equip, setEquip] = useState<Equip[]>([]);
@@ -50,12 +52,13 @@ export function Onboarding() {
   const finish = async () => {
     const now = new Date().toISOString();
     const gymProgram = !places.includes('gym') ? (equip.includes('dumbbell') ? 'home' : 'bodyweight') : days >= 4 ? 'upperlower' : 'fullbody';
+    const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
     const profile: Profile = {
-      goals, daysPerWeek: days, places, homeEquipment: equip, createdAt: now,
+      goals: { ...goals, mobility: legacy }, daysPerWeek: days, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
       enrollments: {
         gym: { programId: gymProgram, startedAt: now },
         run: { programId: goals.run, startedAt: now },
-        mobility: { programId: goals.mobility, startedAt: now },
+        mobility: { programId: 'whole', startedAt: now },
       },
     };
     await seedSamples(profile);
@@ -91,9 +94,15 @@ export function Onboarding() {
       </div>
 
       <div key={step} className="rise flex flex-1 flex-col pt-8">
-        {(step === 'gym' || step === 'run' || step === 'mobility') && (
+        {(step === 'gym' || step === 'run') && (
           <Q kicker={MODULE_TITLE[step][0]} kind={step} title={MODULE_TITLE[step][1]}>
             <OptionList value={goals[step]} options={GOAL_OPTIONS[step]} onChange={(v) => setGoals({ ...goals, [step]: v } as Goals)} />
+          </Q>
+        )}
+        {step === 'mobility' && (
+          <Q kicker={MODULE_TITLE.mobility[0]} kind="mobility" title={MODULE_TITLE.mobility[1]}>
+            <p className="-mt-4 mb-4 text-[16px] text-ink2">Hela kroppen ingår alltid – axlar, rygg, höfter, ben och fotleder varje vecka. Välj gärna ett eller flera områden som ska få extra tid, eller inget alls.</p>
+            <OptionList multi value={focus} options={FOCUS_OPTIONS} onChange={(v) => setFocus((f) => (f.includes(v) ? f.filter((x) => x !== v) : [...f, v]))} />
           </Q>
         )}
         {step === 'days' && (

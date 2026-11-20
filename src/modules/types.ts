@@ -62,4 +62,6 @@ export interface TrainingModule {
   // UI pieces rendered inside shared frames
   Player: FC<PlayerProps>;
   LogForm: FC<LogFormProps>;
+  /** Optional extra settings shown on the module's program page (e.g. mobility focus areas). */
+  ProgramExtra?: FC;
 }

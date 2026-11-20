@@ -3,6 +3,7 @@ import { exportAll, importAll, removeSampleData, resetAll, saveProfile } from '.
 import { useCtx } from '../core/ctx';
 import { useTheme } from '../core/theme';
 import type { Equip, Goals, Place } from '../core/types';
+import { FOCUS_NAME, focusOf } from '../modules/mobility/planner';
 import { MODULE_LIST } from '../modules/registry';
 import { Page, Row, Section } from '../shared/layout/page';
 import { OptionList, Primary, Segmented, Sheet } from '../shared/ui/kit';
@@ -29,9 +30,10 @@ export function Settings() {
     <div className="safe-top mx-auto max-w-lg px-6">
       <Page title="Inställningar" back="/idag">
         <Section title="Mål" className="mt-0">
-          {MODULE_LIST.map((m) => (
+          {MODULE_LIST.filter((m) => m.id !== 'mobility').map((m) => (
             <Row key={m.id} kind={m.id} title={m.name} right={GOAL_OPTIONS[m.id].find((o) => o.value === p.goals[m.id])?.label} onClick={() => setEdit(m.id)} />
           ))}
+          <Row kind="mobility" title="Rörlighet" right={focusOf(p).length ? `Hela kroppen + ${focusOf(p).map((f) => FOCUS_NAME[f].toLowerCase()).join(', ')}` : 'Hela kroppen'} to="/rorlighet/program" />
         </Section>
 
         <Section title="Program">
@@ -68,7 +70,7 @@ export function Settings() {
         <p className="mt-8 text-[13px] text-ink2">All data sparas bara i den här telefonen.</p>
       </Page>
 
-      {(['gym', 'run', 'mobility'] as const).map((id) => (
+      {(['gym', 'run'] as const).map((id) => (
         <Sheet key={id} open={edit === id} onClose={() => setEdit(null)} title="Mål">
           <div className="pb-4">
             <OptionList value={p.goals[id]} options={GOAL_OPTIONS[id]} onChange={(v) => { save({ goals: { ...p.goals, [id]: v } as Goals }); setEdit(null); }} />

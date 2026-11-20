@@ -142,6 +142,7 @@ export const ARTICLES: Article[] = [
     sections: [
       { h: 'Dosen', p: [
         'Statisk stretch minst fem minuter i veckan per område, fördelat på minst fem dagar, ger tydligt ökad rörlighet [22]. Därför räknas rörlighet i dagar, inte i pass. Håll varje stretch 30–45 sekunder och kör två–tre varv.',
+        'Hela kroppen får sin dos varje vecka – axlar, bröst, rygg, höfter, ben och fotleder. Väljer du fokusområden, till exempel splitt, får de dubbelt så mycket tid ovanpå det. Varje pass byggs efter vad som fått minst tid hittills den veckan.',
       ] },
       { h: 'Styrka räknas också', p: [
         'Styrketräning med fullt rörelseomfång ökar rörligheten ungefär lika mycket som stretching [23]. Djupa knäböj, rumänska marklyft och dips är också rörlighetsträning.',
