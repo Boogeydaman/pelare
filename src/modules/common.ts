@@ -38,9 +38,16 @@ export const fmt1 = (n: number) => (Math.round(n * 10) / 10).toString().replace(
  * Running gets about half the days (at least 1), gym the rest but always ≥2 (health.floor [25]).
  * Each is capped by what the chosen program asks for.
  */
+/** The running program the user follows (enrollment first, the onboarding goal as fallback). */
+export const runProgramId = (profile: Profile) => profile.enrollments.run?.programId ?? profile.goals.run;
+/** Distance programs (first 10/15/20 km) need at least three runs a week to work. */
+export const isDistanceProgram = (id: string) => id === '10k' || id === '15k' || id === '20k';
+
 export function weeklySplit(profile: Profile, gymPerWeek: number, runPerWeek: number): { gym: number; run: number } {
   const D = profile.daysPerWeek;
-  const run = Math.max(1, Math.min(runPerWeek, Math.floor(D / 2)));
+  const run = isDistanceProgram(runProgramId(profile))
+    ? Math.min(runPerWeek, Math.max(3, D - 1))
+    : Math.max(1, Math.min(runPerWeek, Math.floor(D / 2)));
   const gym = Math.max(2, Math.min(gymPerWeek, D - run));
   return { gym, run };
 }

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Feel, Profile, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
-import { STAGES, easyShare, guard, next, stage } from './planner';
+import { DISTANCE, STAGES, distanceWeek, easyShare, guard, next, stage, type DistanceId } from './planner';
 
 const NOW = new Date('2026-11-20T17:00:00');
 const ago = (d: number) => new Date(NOW.getTime() - d * 864e5).toISOString();
@@ -72,5 +72,31 @@ describe('Löpning', () => {
   it('räknar andelen lugn löpning', () => {
     expect(easyShare([run(2, 'easy', 80), run(5, 'intervals', 20)], NOW)).toBeCloseTo(0.8);
     expect(easyShare([], NOW)).toBeNull();
+  });
+
+  it('10/15/20 km: långpasset växer högst ~10 % mot tidigare veckor, och sista veckan är distansen', () => {
+    for (const id of Object.keys(DISTANCE) as DistanceId[]) {
+      const w = DISTANCE[id].weeks;
+      expect(w[w.length - 1].long, id).toBe('test');
+      for (let k = 1; k < w.length - 1; k++) {
+        const prevMax = Math.max(...w.slice(0, k).map((x) => (typeof x.long === 'number' ? x.long : 0)));
+        expect((w[k].long as number) / prevMax, `${id} v${k + 1}`).toBeLessThanOrEqual(1.11);
+      }
+    }
+  });
+
+  it('10 km-programmet: lugnt, fart och långpass, i den ordningen, och skadevakten bestämmer långpassets längd', () => {
+    const p = (logs: SessionLog[]) => ({ ...ctx('10k', logs), profile: { ...profile('10k'), enrollments: { ...profile('10k').enrollments, run: { programId: '10k', startedAt: NOW.toISOString() } } } });
+    const base = [run(10, 'easy', 30), run(14, 'easy', 30), run(18, 'easy', 30)];
+    expect(distanceWeek(p(base))?.index).toBe(0);
+    expect(next(p(base)).type).toBe('easy');
+    const ws = new Date(NOW); ws.setHours(0, 0, 0, 0); ws.setDate(ws.getDate() - ((ws.getDay() + 6) % 7));
+    const inWeek = (h: number) => new Date(ws.getTime() + h * 3600_000).toISOString();
+    const done1 = [...base, { ...run(0, 'easy', 25), startedAt: inWeek(8) }];
+    expect(next(p(done1)).type).toBe('strides');
+    const done2 = [...done1, { ...run(0, 'strides', 25), startedAt: inWeek(32) }];
+    const long = next(p(done2));
+    expect(long.type).toBe('long');
+    expect(long.minutes).toBeLessThanOrEqual(Math.floor(30 * 1.1) + 5); // 35 planned, guard caps at 33 (+ walk in/out)
   });
 });

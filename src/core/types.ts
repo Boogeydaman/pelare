@@ -14,7 +14,7 @@ export type Equip = 'dumbbell' | 'band' | 'pullup_bar' | 'bench' | 'kettlebell';
 
 export interface Goals {
   gym: 'stronger' | 'muscle' | 'maintain';
-  run: 'start' | '5k' | '10k';
+  run: 'start' | '5k' | '10k' | '15k' | '20k';
   mobility: 'front_split' | 'side_split' | 'hips' | 'general';
 }
 

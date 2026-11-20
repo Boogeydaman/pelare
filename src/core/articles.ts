@@ -124,6 +124,10 @@ export const ARTICLES: Article[] = [
         'Som nybörjare börjar du med korta joggintervaller och gångpauser, tre pass i veckan med vilodag emellan – samma upplägg som NHS Couch to 5K [34] och svenska nybörjarguider [35]. Pelare tar 20 små steg till 30 minuter utan paus, ungefär sju veckor.',
         'Nya löpare som ökar mycket på kort tid får oftare belastningsskador [33]. Därför går du bara vidare när passet kändes lagom, och de sista stegen är extra små.',
       ] },
+      { h: 'Nästa mål: 10, 15 och 20 km', p: [
+        'När du kan springa 30 minuter finns program för dina första 10 km (8 veckor), 15 km (10 veckor) och 20 km (12 veckor). De är byggda som populära gratisprogram för nybörjare [36][37]: ett lugnt pass, ett med lite fart och ett långpass varje vecka.',
+        'Långpasset växer ungefär 10 % i veckan, med en lättare vecka var fjärde vecka, och sista veckan springer du distansen. Skadevakten gäller alltid: säger programmet mer än 10 % över ditt längsta pass senaste månaden, är det skadevakten som bestämmer [19].',
+      ] },
       { h: '80/20', p: [
         'Ungefär 80 % av löptiden i pratbart tempo och 20 % hårdare ger lite bättre kondition än andra fördelningar [17]. Lugna pass bygger uthålligheten utan att slita.',
       ] },
@@ -137,7 +141,7 @@ export const ARTICLES: Article[] = [
         'Styrketräning förbättrar löpekonomin [20], och löpning hindrar inte muskeltillväxt eller styrka nämnvärt [15]. Därför finns minst två styrkepass i veckan även när löpning är målet.',
       ] },
     ],
-    sources: [15, 17, 18, 19, 20, 33, 34, 35],
+    sources: [15, 17, 18, 19, 20, 33, 34, 35, 36, 37],
   },
   {
     id: 'rorlighet', group: 'Pelarna', topic: 'mobility', minutes: 3, kicker: 'Rörlighet',

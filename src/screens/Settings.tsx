@@ -85,7 +85,11 @@ export function Settings() {
       {(['gym', 'run'] as const).map((id) => (
         <Sheet key={id} open={edit === id} onClose={() => setEdit(null)} title="Mål">
           <div className="pb-4">
-            <OptionList value={p.goals[id]} options={GOAL_OPTIONS[id]} onChange={(v) => { save({ goals: { ...p.goals, [id]: v } as Goals }); setEdit(null); }} />
+            <OptionList value={p.goals[id]} options={GOAL_OPTIONS[id]} onChange={(v) => {
+              // A new running goal starts that program from week 1.
+              const enrollments = id === 'run' && v !== p.goals.run ? { ...p.enrollments, run: { programId: v as string, startedAt: new Date().toISOString() } } : p.enrollments;
+              save({ goals: { ...p.goals, [id]: v } as Goals, enrollments }); setEdit(null);
+            }} />
           </div>
         </Sheet>
       ))}

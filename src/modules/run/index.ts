@@ -3,15 +3,22 @@ import { createElement } from 'react';
 import type { LibraryItem, Metric, ProgramOption } from '../../core/types';
 import { Field, NumberInput, QuickLog, parseNum } from '../../shared/ui/fields';
 import { fmt1, thisWeek, weeklySeries, weeklySplit } from '../common';
+import { DISTANCE, distanceWeek, programWeek, slotsOf, type DistanceId } from './planner';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { RunPlayer } from './Player';
 import { HARD_TYPES, STAGES, easy, easyShare, guard, km, next, runs, stage, strides, tempo, test5k } from './planner';
 
 const PROGRAMS: ProgramOption[] = [
-  { id: 'start', name: 'Från noll till 30 min', description: 'Gå-spring i 20 små steg, tre pass i veckan, tills du joggar 30 minuter utan paus – ungefär sju veckor. Nästa steg låses upp när passet känns lagom, annars kör du samma steg igen.', weeks: 7, perWeek: 3 },
-  { id: '5k', name: '5 km', description: 'Två lugna pass och ett intervallpass i veckan. Långpasset växer i små steg.', weeks: 8, perWeek: 3 },
-  { id: '10k', name: '10 km', description: 'Mer lugn volym, ett intervallpass och ett långpass i veckan.', weeks: 10, perWeek: 3 },
-  { id: 'maintain', name: 'Underhåll', description: 'Två lugna pass i veckan för att behålla formen.', weeks: 4, perWeek: 2 },
+  { id: 'start', name: 'Dina första 5 km', weeks: 7, perWeek: 3,
+    description: 'Från noll: gå-spring i 20 små steg tills du joggar 30 minuter utan paus – för de flesta ungefär 5 km. Tre pass i veckan med vilodag emellan, som NHS Couch to 5K men med mindre steg på slutet.' },
+  { id: '10k', name: 'Dina första 10 km', weeks: 8, perWeek: 3,
+    description: 'För dig som kan springa 30 minuter utan paus. Tre pass i veckan: ett lugnt, ett med lite fart och ett långpass som växer från 35 till 55 minuter. Vecka 8 springer du 10 km.' },
+  { id: '15k', name: 'Dina första 15 km', weeks: 10, perWeek: 4,
+    description: 'För dig som springer 10 km. Tre till fyra pass i veckan med ett långpass som växer från 55 till 90 minuter, en lättare vecka var fjärde vecka. Vecka 10 springer du 15 km.' },
+  { id: '20k', name: 'Dina första 20 km', weeks: 12, perWeek: 4,
+    description: 'För dig som springer 10 km bekvämt. Fyra pass i veckan med ett långpass som växer från 60 minuter till knappt två timmar, med lättare veckor emellan. Vecka 12 springer du 20 km.' },
+  { id: '5k', name: 'Snabbare 5 km', weeks: 8, perWeek: 3, description: 'För dig som redan springer 5 km. Två lugna pass och ett intervallpass i veckan.' },
+  { id: 'maintain', name: 'Underhåll', weeks: 4, perWeek: 2, description: 'Två lugna pass i veckan för att behålla formen.' },
 ];
 
 const TYPES: LibraryItem[] = [
@@ -61,7 +68,7 @@ export const run: TrainingModule = {
       { id: 'log', label: 'Logga i efterhand', hint: 'Sprang du med klockan?', to: '/lopning/logga' },
     ];
   },
-  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: weeklySplit(ctx.profile, 4, program(ctx).perWeek).run, unit: 'pass' }),
+  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: weeklySplit(ctx.profile, 4, distanceWeek(ctx)?.week.runs ?? program(ctx).perWeek).run, unit: 'pass' }),
 
   programs: PROGRAMS,
   program(ctx) {
@@ -70,6 +77,23 @@ export const run: TrainingModule = {
     const week = Math.min(p.weeks, Math.max(1, Math.floor((ctx.now.getTime() - started.getTime()) / (7 * 864e5)) + 1));
     const done = thisWeek(ctx, 'run').length;
     const st = stage(ctx.profile, ctx.logs);
+    const dw = distanceWeek(ctx);
+    if (dw) {
+      const plan = DISTANCE[dw.id];
+      const QN = { strides: 'Lugnt + stegringar', tempo: 'Tempopass', intervals: 'Intervaller' };
+      const titles = slotsOf(dw.week).map((s) => (s === 'long' ? (dw.week.long === 'test' ? `${plan.km} km!` : `Långpass ${dw.week.long} min`) : s === 'quality' ? QN[dw.week.quality] : `Lugnt ${dw.week.easy} min`));
+      const n = plan.weeks.length;
+      const marks = [Math.round(n / 4), Math.round(n / 2), Math.round((3 * n) / 4), n];
+      return {
+        program: p, week: dw.index + 1, label: `Vecka ${dw.index + 1} av ${n}`,
+        thisWeek: titles.map((title, k) => ({ title, done: k < slotsOf(dw.week).length - dw.left.length })),
+        milestones: marks.map((m) => { const l = plan.weeks[m - 1].long; return { label: l === 'test' ? `${plan.km} km` : `${l} min`, done: dw.index + 1 > m }; }),
+      };
+    }
+    if (p.id in DISTANCE && programWeek(ctx.profile, ctx.now) >= DISTANCE[p.id as DistanceId].weeks.length) {
+      return { program: p, week: p.weeks, label: 'Programmet är klart – byt till nästa distans eller Underhåll',
+        thisWeek: [{ title: 'Lugnt', done: done > 0 }, { title: 'Lugnt', done: done > 1 }], milestones: [{ label: 'Klart', done: true }] };
+    }
     const titles = p.id === 'start' ? ['Gå-spring', 'Gå-spring', 'Gå-spring'] : p.id === 'maintain' ? ['Lugnt', 'Lugnt'] : ['Lugnt', 'Intervaller', 'Långpass'];
     return {
       program: p, week, label: p.id === 'start' && st !== 'done' ? `Steg ${st + 1} av ${STAGES.length}` : `Vecka ${week} av ${p.weeks}`,

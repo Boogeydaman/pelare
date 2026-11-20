@@ -3,6 +3,7 @@
 import { weekStart } from '../../core/format';
 import type { PlannedSession, Profile, RunSegment, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
+import { isDistanceProgram, runProgramId } from '../common';
 
 const DAY = 864e5;
 export const HARD_TYPES = ['intervals', 'tempo', 'long', 'test'];
@@ -28,7 +29,7 @@ export const km = (l: SessionLog) => (l.data?.kind === 'run' ? l.data.distanceKm
 
 /** Walk-run stage: one step up per walk-run session that did not feel heavy. 'done' after the last stage. */
 export function stage(profile: Profile, logs: SessionLog[]): number | 'done' {
-  if (profile.goals.run !== 'start') return 'done';
+  if (runProgramId(profile) !== 'start') return 'done';
   const started = new Date(profile.enrollments.run?.startedAt ?? 0);
   const done = runs(logs).filter((l) => l.type === 'walkrun' && new Date(l.startedAt) >= started && l.feel !== 3).length;
   return done >= STAGES.length ? 'done' : done;
@@ -40,7 +41,8 @@ export interface Guard { maxMin: number; longestMin: number; maxKm?: number; ass
 export function guard(profile: Profile, logs: SessionLog[], now: Date): Guard {
   const recent = runs(logs).filter((l) => now.getTime() - new Date(l.startedAt).getTime() <= 30 * DAY);
   if (!recent.length) {
-    const assumed = profile.goals.run === 'start' ? 20 : profile.goals.run === '5k' ? 30 : 45;
+    const id = runProgramId(profile);
+    const assumed = id === 'start' ? 20 : id === '5k' ? 30 : id in DISTANCE ? (DISTANCE[id as DistanceId].weeks[0].long as number) : 45;
     return { maxMin: Math.round(assumed * 1.1), longestMin: assumed, assumed: true };
   }
   const longestMin = Math.max(...recent.map((l) => l.minutes));
@@ -107,8 +109,8 @@ export function intervals(beginner: boolean): PlannedSession {
   ], 'hårt');
 }
 
-export function tempo(): PlannedSession {
-  return plan('tempo', 'Tempopass', [seg('Uppvärmning', 10, 'lugnt'), seg('Tempo, kontrollerat ansträngt', 15, 'hårt'), seg('Nedjogg', 5, 'lugnt')], '15 min i tempo', [
+export function tempo(min = 15): PlannedSession {
+  return plan('tempo', 'Tempopass', [seg('Uppvärmning', 10, 'lugnt'), seg('Tempo, kontrollerat ansträngt', min, 'hårt'), seg('Nedjogg', 5, 'lugnt')], `${min} min i tempo`, [
     'Kontrollerat ansträngt – du kan säga några ord, inte hela meningar.',
   ], 'hårt');
 }
@@ -149,9 +151,105 @@ export function next(ctx: ModuleCtx): PlannedSession {
   const week = runs(ctx.logs).filter((l) => new Date(l.startedAt) >= weekStart(ctx.now));
   const base = runs(ctx.logs).filter((l) => ctx.now.getTime() - new Date(l.startedAt).getTime() <= 30 * DAY).length;
   const intervalsDone = runs(ctx.logs).filter((l) => l.type === 'intervals').length;
-  const goal = ctx.profile.goals.run;
+  const goal = runProgramId(ctx.profile);
+  const dp = distanceSession(ctx, g);
+  if (dp) return dp;
   if (goal !== 'start' && base >= 3 && week.length >= 1 && !week.some((l) => l.type === 'intervals')) return intervals(intervalsDone < 4);
   const lp = week.length >= 2 && !week.some((l) => l.type === 'long') ? long(g, ctx.checkin.minutes) : null;
   if (lp) return lp;
   return easy(Math.round(Math.max(20, g.longestMin * 0.7)), g);
+}
+
+// ---------------------------------------------------------------- First 10, 15 and 20 km
+
+/**
+ * Week-by-week programs for a first 10, 15 or 20 km. Shaped like popular free novice plans – Hal Higdon's
+ * Novice 10K (8 weeks), 15K Novice (10 weeks) and Novice 1 half marathon (12 weeks), Nuffield Health's
+ * 8-week 10K – but written for Pelare: three runs a week (four in the longer plans), one easy, one with
+ * some speed and one long run that grows about 10 % a week [19], an easier week every fourth week, and
+ * the distance itself in the last week. Mostly easy running [17], one quality session [18].
+ */
+export type DistanceId = '10k' | '15k' | '20k';
+export interface PlanWeek { long: number | 'test'; easy: number; quality: 'strides' | 'tempo' | 'intervals'; runs: 3 | 4 }
+const W = (long: number | 'test', easy: number, quality: PlanWeek['quality'], runs: 3 | 4 = 3): PlanWeek => ({ long, easy, quality, runs });
+
+export const DISTANCE: Record<DistanceId, { km: number; name: string; weeks: PlanWeek[] }> = {
+  '10k': { km: 10, name: 'Dina första 10 km', weeks: [
+    W(35, 25, 'strides'), W(38, 25, 'strides'), W(42, 30, 'tempo'), W(35, 25, 'strides'),
+    W(46, 30, 'intervals'), W(50, 30, 'tempo'), W(55, 30, 'intervals'), W('test', 25, 'strides'),
+  ] },
+  '15k': { km: 15, name: 'Dina första 15 km', weeks: [
+    W(55, 30, 'strides'), W(60, 30, 'tempo'), W(66, 35, 'intervals'), W(55, 30, 'strides'),
+    W(72, 35, 'tempo', 4), W(79, 35, 'intervals', 4), W(86, 40, 'tempo', 4), W(90, 40, 'intervals', 4),
+    W(60, 30, 'strides'), W('test', 25, 'strides'),
+  ] },
+  '20k': { km: 20, name: 'Dina första 20 km', weeks: [
+    W(60, 35, 'strides', 4), W(66, 35, 'tempo', 4), W(72, 40, 'intervals', 4), W(60, 35, 'strides', 4),
+    W(79, 40, 'tempo', 4), W(86, 40, 'intervals', 4), W(94, 45, 'tempo', 4), W(75, 40, 'strides', 4),
+    W(103, 45, 'intervals', 4), W(112, 45, 'tempo', 4), W(80, 35, 'strides'), W('test', 25, 'strides'),
+  ] },
+};
+
+/** Calendar week of the program (0-based), counted in Mondays since the start. */
+export function programWeek(profile: Profile, now: Date): number {
+  const start = weekStart(new Date(profile.enrollments.run?.startedAt ?? now));
+  return Math.max(0, Math.round((weekStart(now).getTime() - start.getTime()) / (7 * DAY)));
+}
+
+export type Slot = 'easy' | 'quality' | 'long';
+export const slotsOf = (w: PlanWeek): Slot[] => (w.runs === 4 ? ['easy', 'quality', 'long', 'easy'] : ['easy', 'quality', 'long']);
+const slotOfLog = (l: SessionLog): Slot => (l.type === 'long' || l.type === 'test' ? 'long' : ['intervals', 'tempo', 'strides'].includes(l.type) ? 'quality' : 'easy');
+
+/** The program week and which of its sessions are still left. Null when not on a distance program or after it ends. */
+export function distanceWeek(ctx: ModuleCtx): { id: DistanceId; index: number; week: PlanWeek; left: Slot[] } | null {
+  const id = runProgramId(ctx.profile);
+  if (!isDistanceProgram(id)) return null;
+  const p = DISTANCE[id as DistanceId];
+  const index = programWeek(ctx.profile, ctx.now);
+  if (index >= p.weeks.length) return null;
+  const week = p.weeks[index];
+  const left = [...slotsOf(week)];
+  for (const l of runs(ctx.logs).filter((x) => new Date(x.startedAt) >= weekStart(ctx.now))) {
+    const k = left.indexOf(slotOfLog(l));
+    if (k >= 0) left.splice(k, 1); else if (left.length) left.shift();
+  }
+  return { id: id as DistanceId, index, week, left };
+}
+
+export function testDistance(km: number): PlannedSession {
+  const est = Math.round(km * 6.5);
+  return plan('test', `Dina första ${km} km`, [seg('Gå igång', 5, 'gå'), seg(`${km} km i jämnt, lugnt tempo`, est, 'lugnt'), seg('Gå ner i varv', 5, 'gå')], `${km} km – tiden spelar ingen roll`, [
+    `Veckans stora pass: du springer ${km} km för första gången. Börja lugnare än du tror att du behöver.`,
+    'Tiden är inte viktig i dag – att ta dig runt i jämn fart är målet. Gå en bit om du behöver, det räknas ändå.',
+  ], 'hårt');
+}
+
+function distanceSession(ctx: ModuleCtx, g: Guard): PlannedSession | null {
+  const d = distanceWeek(ctx);
+  if (!d) return null;
+  const p = DISTANCE[d.id];
+  const head = `Vecka ${d.index + 1} av ${p.weeks.length} i ${p.name}.`;
+  const slot = d.left[0] ?? 'easy';
+  const extra = d.left.length === 0;
+  let s: PlannedSession;
+  if (slot === 'long' && d.week.long === 'test') s = testDistance(p.km);
+  else if (slot === 'long') {
+    const target = d.week.long as number;
+    const m = Math.max(20, Math.min(target, g.maxMin));
+    s = plan('long', 'Långpass', [seg('Gå igång', 3, 'gå'), seg('Långpass, lugnt', m, 'lugnt'), seg('Gå ner i varv', 2, 'gå')], `${m} min lugnt`, [
+      'Veckans viktigaste pass: långpasset bygger uthålligheten för distansen. Lugnt hela vägen – du ska kunna prata.',
+      m < target ? `Programmet säger ${target} min, men skadevakten stoppar vid ${m}: aldrig mer än 10 % längre än ditt längsta pass senaste 30 dagarna [19].` : 'Ungefär 10 % längre än förra veckan – lagom för att kroppen ska hänga med [19].',
+    ]);
+  } else if (slot === 'quality') {
+    s = d.week.quality === 'intervals' ? intervals(runs(ctx.logs).filter((l) => l.type === 'intervals').length < 4)
+      : d.week.quality === 'tempo' ? tempo(d.index < 4 ? 12 : d.index < 8 ? 15 : 20) : strides();
+  } else s = easy(d.week.easy, g);
+  const prev = d.index > 0 ? p.weeks[d.index - 1].long : null;
+  const lighter = typeof d.week.long === 'number' && typeof prev === 'number' && d.week.long < prev;
+  const n = slotsOf(d.week).length;
+  return { ...s, reasons: [
+    { text: extra ? `${head} Veckans pass är gjorda – det här är extra, håll det lugnt.` : `${head} ${d.left.length === 1 ? 'Sista passet' : `Pass ${n - d.left.length + 1} av ${n}`} den här veckan.` },
+    ...(lighter ? [{ text: 'Lättare vecka: kortare långpass så att kroppen hinner bygga upp sig inför nästa ökning.' }] : []),
+    ...s.reasons,
+  ] };
 }

@@ -14,9 +14,11 @@ export const GOAL_OPTIONS: { [K in ModuleId]: { value: Goals[K]; label: string; 
     { value: 'maintain', label: 'Hålla mig stark', hint: 'Minsta effektiva dos' },
   ],
   run: [
-    { value: 'start', label: 'Börja springa', hint: 'Från noll, med gå-spring' },
-    { value: '5k', label: 'Springa 5 km', hint: 'Utan att gå' },
-    { value: '10k', label: 'Springa 10 km', hint: 'Jag springer redan ibland' },
+    { value: 'start', label: 'Dina första 5 km', hint: 'Från noll, med gå-spring · 7 veckor' },
+    { value: '10k', label: 'Dina första 10 km', hint: 'Jag kan springa 30 min utan paus · 8 veckor' },
+    { value: '15k', label: 'Dina första 15 km', hint: 'Jag springer redan 10 km · 10 veckor' },
+    { value: '20k', label: 'Dina första 20 km', hint: 'Jag springer 10 km bekvämt · 12 veckor' },
+    { value: '5k', label: 'Snabbare 5 km', hint: 'Jag springer redan 5 km' },
   ],
   mobility: [
     { value: 'front_split', label: 'Splitt framåt', hint: 'Baksida lår och höftböjare' },

@@ -1,5 +1,5 @@
 // All sources the app cites. 1–26 come from the spec (docs/SPEC.md section 12);
-// 27–35 were looked up and checked against PubMed/journal/publisher pages on 2026-11-20 (35 = the user's PDF).
+// 27–37 were looked up and checked against PubMed/journal/publisher pages on 2026-11-20 (35 = the user's PDF).
 import { SOURCES as SPEC_SOURCES, type Source } from '../engine/rules';
 
 export type { Source };
@@ -12,6 +12,8 @@ const EXTRA: Source[] = [
   { id: 33, year: 2014, level: 'C', cite: 'Nielsen m.fl. Excessive progression in weekly running distance and risk of running-related injuries: 874 novice runners. J Orthop Sports Phys Ther. 2014', url: 'https://vbn.aau.dk/da/publications/excessive-progression-in-weekly-running-distance-and-risk-of-runn' },
   { id: 34, year: 2024, level: 'H', cite: 'NHS. Couch to 5K: 9 veckor, 3 pass i veckan med vilodag emellan, gå-spring till 30 minuter.', url: 'https://www.nhs.uk/better-health/get-active/get-running-with-couch-to-5k/couch-to-5k-running-plan/' },
   { id: 35, year: 2020, level: 'D', cite: 'Joggingguide 2020: Löpning för nybörjare – från 0 till 5 km på 6 veckor (gå-jogg, 3 pass i veckan).' },
+  { id: 36, year: 2024, level: 'H', cite: 'Hal Higdon. Novice-program för 10 km (8 veckor), 15 km (10 veckor) och halvmaraton (12 veckor): långpass som växer varje helg, 3–4 löppass i veckan.', url: 'https://us.humankinetics.com/blogs/excerpt/novice-training-programs' },
+  { id: 37, year: 2024, level: 'H', cite: 'Nuffield Health. 8-week 10km training plan för nybörjare.', url: 'https://www.nuffieldhealth.com/articles/fitness/8-week-10km-training-plan' },
   { id: 31, year: 2021, level: 'B', cite: 'Maeo m.fl. Greater hamstrings hypertrophy after training at long versus short muscle lengths (sittande vs liggande bencurl). Med Sci Sports Exerc. 2021', url: 'https://pubmed.ncbi.nlm.nih.gov/33009197/' },
   { id: 32, year: 2023, level: 'B', cite: 'Kinoshita m.fl. Triceps surae hypertrophy is greater after standing versus seated calf-raise training. Front Physiol. 2023', url: 'https://doi.org/10.3389/fphys.2023.1272106' },
 ];

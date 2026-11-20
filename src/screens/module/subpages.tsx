@@ -20,7 +20,8 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
   const current = ctx.profile.enrollments[m.id]?.programId ?? m.programs[0].id;
   const choose = (programId: string) => {
     if (programId === current) return;
-    saveProfile({ ...ctx.profile, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } });
+    const goals = m.id === 'run' && ['start', '5k', '10k', '15k', '20k'].includes(programId) ? { ...ctx.profile.goals, run: programId as typeof ctx.profile.goals.run } : ctx.profile.goals;
+    saveProfile({ ...ctx.profile, goals, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } });
   };
 
   return (
