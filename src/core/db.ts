@@ -1,3 +1,4 @@
+import { NATIVE } from './native';
 import Dexie, { type Table } from 'dexie';
 import { useLiveQuery } from 'dexie-react-hooks';
 import type { CheckIn, LogData, LogModule, PlannedSession, Profile, SessionLog, TestResult } from './types';
@@ -90,10 +91,21 @@ export async function exportAll() {
     tests: await db.tests.toArray(),
     checkins: await db.checkins.toArray(),
   };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+  const name = `pelare-${new Date().toISOString().slice(0, 10)}.json`;
+  if (NATIVE) {
+    // The Android app's web view can't download files: write it to the cache and open the share sheet
+    // (save to Drive, Files, send to yourself …).
+    const { Filesystem, Directory, Encoding } = await import('@capacitor/filesystem');
+    const { Share } = await import('@capacitor/share');
+    const { uri } = await Filesystem.writeFile({ path: name, data: json, directory: Directory.Cache, encoding: Encoding.UTF8 });
+    await Share.share({ title: 'Pelare – säkerhetskopia', files: [uri] });
+    return;
+  }
+  const blob = new Blob([json], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `pelare-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = name;
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 1000);
 }

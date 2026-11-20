@@ -5,6 +5,7 @@ build/
 .env
 .env.*
 !.env.example
+!.env.android
 *.log
 .DS_Store
 Thumbs.db

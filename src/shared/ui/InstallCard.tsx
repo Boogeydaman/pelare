@@ -1,3 +1,4 @@
+import { NATIVE } from '../../core/native';
 import { Download, X } from 'lucide-react';
 import { useState } from 'react';
 import { useInstall } from '../../core/install';
@@ -9,7 +10,7 @@ const KEY = 'pelare.installHidden';
 export function InstallCard({ dismissible = true }: { dismissible?: boolean }) {
   const s = useInstall();
   const [hidden, setHidden] = useState(() => { try { return localStorage.getItem(KEY) === '1'; } catch { return false; } });
-  if (s.installed || (dismissible && hidden)) return null;
+  if (NATIVE || s.installed || (dismissible && hidden)) return null;
 
   const hide = () => { setHidden(true); try { localStorage.setItem(KEY, '1'); } catch { /* ignore */ } };
 

@@ -2,13 +2,14 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-export default defineConfig({
+export default defineConfig(({ mode }) => ({
   base: './',
   // Shown under Settings so you can check that the phone has the latest version.
   define: { __APP_VERSION__: JSON.stringify(new Date().toLocaleString('sv-SE', { timeZone: 'Europe/Stockholm' }).slice(0, 16)) },
   plugins: [
     react(),
     VitePWA({
+      disable: mode === 'android',
       registerType: 'autoUpdate',
       includeAssets: ['icon.svg'],
       manifest: {
@@ -32,4 +33,4 @@ export default defineConfig({
     }),
   ],
   test: { include: ['src/**/*.test.ts'] },
-});
+}));
