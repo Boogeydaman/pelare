@@ -85,7 +85,10 @@ export const gym: TrainingModule = {
     const first = index - Math.min(done, index);
     return {
       program, week, label: `Vecka ${week} av ${program.weeks}`,
-      thisWeek: Array.from({ length: gymDaysOf(ctx.profile) }, (_, i) => ({ title: program.sessions[(first + i) % program.sessions.length].title, done: i < done })),
+      thisWeek: Array.from({ length: gymDaysOf(ctx.profile) }, (_, i) => ({
+        title: program.id === 'rolling' ? (i === done ? `Nästa: ${nextTemplate(ctx, program).tpl.title}` : `Pass ${i + 1}`) : program.sessions[(first + i) % program.sessions.length].title,
+        done: i < done,
+      })),
       milestones: Array.from({ length: program.weeks }, (_, i) => ({ label: `V${i + 1}`, done: i + 1 < week })),
     };
   },

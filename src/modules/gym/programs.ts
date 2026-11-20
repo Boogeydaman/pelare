@@ -56,6 +56,50 @@ export const PROGRAMS: GymProgram[] = [
     ],
   },
   {
+    id: 'totalbody', name: 'Helkropp A/B: 7 rörelsemönster', place: 'gym', weeks: 8, perWeek: 3,
+    description: 'Två helkroppspass som växlar, byggda på sju rörelsemönster: knäböj, utfall, höftfällning, press, drag, bära och en korrektiv övning. Tunga baslyft på 5 reps, assistans på 10–12.',
+    source: 'Total Body A/B-programmet (användarens anteckningar, nivå D), regelbas [1][4].',
+    sessions: [
+      { type: 'tb_a', title: 'Helkropp A: knäböj och bänk', slots: [
+        s('multi_lunge', 2, 'Uppvärmning: två kliv framåt, åt sidan och snett bakåt per ben.'), s('squat', 3, 'Öka vikten när alla 5 reps sitter.', [5, 5]),
+        s('hip_thrust', 3, undefined, [10, 12]), s('bench', 3, undefined, [5, 5]), s('chinup', 3, 'Med extra vikt när du klarar 10.', [6, 10]),
+        s('farmer_carry', 2, 'Sikta mot halva kroppsvikten i varje hand.'), s('face_pull', 2, '12 strikta reps med utåtrotation.', [12, 12]),
+      ] },
+      { type: 'tb_b', title: 'Helkropp B: marklyft och press', slots: [
+        s('multi_lunge', 2, 'Uppvärmning: två kliv framåt, åt sidan och snett bakåt per ben.'), s('deadlift', 3, 'Öka vikten när alla 5 reps sitter.', [5, 5]),
+        s('bb_reverse_lunge', 3, 'Per ben.', [10, 10]), s('ohp', 3, undefined, [5, 5]), s('barbell_row', 3, undefined, [10, 12]),
+        s('oh_carry', 2, 'Ungefär en fjärdedel av kroppsvikten i varje hand.'), s('band_walk', 2),
+      ] },
+    ],
+  },
+  {
+    id: 'allmuscles', name: 'Muskelbygge 4×: alla muskler', place: 'gym', weeks: 8, perWeek: 4,
+    description: 'Över- och underkropp två gånger var, med övningar valda för att träffa varje muskel i sträckt läge – även trapezius, underarmar och baksida axlar.',
+    source: 'Övningslistan "alla muskler" (användarens anteckningar, nivå D), Dr Mike (1–3 övningar per muskel), regelbas [1][4][5].',
+    sessions: [
+      { type: 'am_upper1', title: 'Överkropp 1: bröst och lats', slots: [
+        s('db_press', 3), s('cable_incline_press', 3), s('high_cable_row', 3), s('straight_arm_pd', 2),
+        s('lateral_cable', 3, 'Starta med kabeln snett framför kroppen för djupare sträckning.'), s('skullcrusher', 2), s('wall_curl', 2, 'Sista setet: kliv ut från väggen, fuska upp några till och sänk mycket långsamt.'),
+      ] },
+      { type: 'am_lower1', title: 'Underkropp 1: framsida lår', slots: [
+        s('front_squat', 3), s('rdl', 3), s('ghr', 2), s('calf', 3), s('shrug', 2), s('cable_crunch', 2),
+      ] },
+      { type: 'am_upper2', title: 'Överkropp 2: press och rodd', slots: [
+        s('bench', 3), s('dips', 2, '1,5-stil: botten, halvvägs upp, botten, hela vägen upp = 1 rep. Sista setet: dropset till kroppsvikt.'),
+        s('barbell_row', 3), s('rear_delt_row', 2), s('lateral_db', 2, 'Tyngre vikt med lite fart i starten är okej här.'), s('cg_bench', 2), s('hammer_cross', 2),
+      ] },
+      { type: 'am_lower2', title: 'Underkropp 2: säte och baksida', slots: [
+        s('bulgarian', 3), s('hip_thrust', 3), s('leg_curl', 2), s('leg_ext', 2), s('calf', 3), s('farmer_carry', 2), s('hanging_knee', 2),
+      ] },
+    ],
+  },
+  {
+    id: 'rolling', name: 'Rullande: alla gympass', place: 'gym', weeks: 12, perWeek: 3,
+    description: 'Alla gympass i appen i en rullande blandning. Varje gång väljs det pass som tränar det som fått minst den här veckan, och som inte belastar muskler som fortfarande är trötta. Lika många pass i veckan som du har valt.',
+    source: 'Alla gymprogram ovan. Valet: veckovolym per muskel [2] och 48–72 timmars återhämtning [1].',
+    sessions: [],
+  },
+  {
     id: 'bodyweight', name: 'Kroppsvikt 3×', place: 'home', weeks: 6, perWeek: 3,
     description: 'Helkropp utan vikter. Du blir starkare genom svårare varianter: när du klarar toppen av repintervallet föreslås nästa steg.',
     source: 'Calisthenics Family (topp 10-övningar, 3×/v helkropp), calisthenics per muskelgrupp-videon (progressioner).',
@@ -82,5 +126,9 @@ export const PROGRAMS: GymProgram[] = [
     ],
   },
 ];
+
+// The rolling program draws from every gym session in the other gym programs.
+const ROLLING = PROGRAMS.find((p) => p.id === 'rolling')!;
+ROLLING.sessions = PROGRAMS.filter((p) => p.place === 'gym' && p !== ROLLING).flatMap((p) => p.sessions);
 
 export const PROGRAM_BY_ID: Record<string, GymProgram> = Object.fromEntries(PROGRAMS.map((p) => [p.id, p]));

@@ -128,8 +128,8 @@ export function volume(logs: SessionLog[], from: Date): Record<Muscle, number> {
     for (const r of l.data.exercises) {
       const ex = EX[r.id];
       if (!ex) continue;
-      ex.primary.forEach((m) => (v[m] += r.sets.length));
-      ex.secondary.forEach((m) => (v[m] += r.sets.length * 0.5));
+      ex.primary.forEach((m) => { if (m in v) v[m] += r.sets.length; });
+      ex.secondary.forEach((m) => { if (m in v) v[m] += r.sets.length * 0.5; });
     }
   }
   return v;
@@ -150,6 +150,7 @@ export function programOf(profile: Profile): GymProgram {
 }
 
 export function nextTemplate(ctx: ModuleCtx, program: GymProgram): { tpl: SessionTemplate; index: number } {
+  if (program.id === 'rolling') return rollingNext(ctx, program);
   const started = new Date(ctx.profile.enrollments.gym?.startedAt ?? 0);
   const types = new Set(program.sessions.map((s) => s.type));
   const done = ctx.logs.filter((l) => l.module === 'gym' && new Date(l.startedAt) >= started && types.has(l.type)).length;
@@ -243,4 +244,33 @@ function toItem(t: Target, slot: Slot, last?: Done): StrengthItem {
     target: t.reps,
     last: lastText(last),
   };
+}
+
+/**
+ * Rolling program: from every gym session, pick the one that best fills this week's gaps.
+ * Score = sets on muscles still under the weekly target, minus muscles that are not recovered,
+ * minus sessions done recently (so the mix keeps rotating), plus a little for the longest-unused.
+ */
+export function rollingNext(ctx: ModuleCtx, program: GymProgram): { tpl: SessionTemplate; index: number } {
+  const goal = weeklyTarget(ctx.profile.goals.gym);
+  const week = weekVolume(ctx);
+  const tired = new Set(notRecovered(ctx));
+  const gym = ctx.logs.filter((l) => l.module === 'gym').sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const recent = gym.slice(0, 4).map((l) => l.type);
+  const lastIdx = (type: string) => { const k = gym.findIndex((l) => l.type === type); return k === -1 ? 99 : k; };
+  let best = program.sessions[0], bestScore = -Infinity;
+  for (const tpl of program.sessions) {
+    let need = 0, sore = 0;
+    for (const slot of tpl.slots) {
+      for (const m of EX[slot.ex]?.primary ?? []) {
+        if (!(m in week)) continue;
+        need += Math.min(slot.sets, Math.max(0, goal - week[m as Muscle]));
+        if (tired.has(m as Muscle)) sore += slot.sets;
+      }
+    }
+    const k = recent.indexOf(tpl.type);
+    const score = need - 1.5 * sore - (k === -1 ? 0 : (4 - k) * 6) + Math.min(lastIdx(tpl.type), 20) * 0.3;
+    if (score > bestScore) { bestScore = score; best = tpl; }
+  }
+  return { tpl: best, index: gym.length };
 }

@@ -1,3 +1,4 @@
+import { PROGRAM_BY_ID } from './programs';
 import { describe, expect, it } from 'vitest';
 import type { ExerciseResult, Feel, Profile, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
@@ -200,6 +201,26 @@ describe('På resa och veckans fördelning', () => {
     expect(gymProgramFor(3, ['gym'], [])).toBe('fullbody');
     expect(gymProgramFor(4, ['gym'], [])).toBe('upperlower');
     expect(gymProgramFor(3, ['home'], ['dumbbell'])).toBe('home_db');
+  });
+});
+
+describe('Rullande program', () => {
+  it('blandar alla pass, upprepar inte samma pass i rad och undviker trötta muskler', () => {
+    const prog = PROGRAM_BY_ID.rolling;
+    expect(prog.sessions.length).toBeGreaterThanOrEqual(12);
+    const logs: SessionLog[] = [];
+    const picked: string[] = [];
+    for (let k = 0; k < 8; k++) {
+      // One session every second day, oldest first.
+      const now = new Date(NOW.getTime() + k * 48 * 3600_000);
+      const c = ctx({ now, logs, profile: profile({ enrollments: { ...profile().enrollments, gym: { programId: 'rolling', startedAt: ago(24) } } }) });
+      const tpl = nextTemplate(c, prog).tpl;
+      picked.push(tpl.type);
+      logs.push({ id: `r${k}`, module: 'gym', type: tpl.type, title: tpl.title, startedAt: now.toISOString(), minutes: 50,
+        data: { kind: 'strength', exercises: tpl.slots.map((sl) => ({ id: sl.ex, name: EX[sl.ex].name, sets: Array.from({ length: sl.sets }, () => ({ kg: 20, reps: 8 })), feel: 2 })) } });
+    }
+    for (let k = 1; k < picked.length; k++) expect(picked[k], picked.join(', ')).not.toBe(picked[k - 1]);
+    expect(new Set(picked).size, picked.join(', ')).toBeGreaterThanOrEqual(5);
   });
 });
 

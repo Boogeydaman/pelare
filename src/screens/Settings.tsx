@@ -103,10 +103,11 @@ export function Settings() {
             onChange={(v) => {
               // Switch to the matching gym program when the number of days changes.
               const prog = gymProgramFor(v, p.places, p.homeEquipment);
-              const enrollments = prog !== p.enrollments.gym?.programId && p.places.includes('gym') ? { ...p.enrollments, gym: { programId: prog, startedAt: new Date().toISOString() } } : p.enrollments;
+              const standard = ['minimal', 'fullbody', 'upperlower'].includes(p.enrollments.gym?.programId ?? 'fullbody');
+              const enrollments = standard && prog !== p.enrollments.gym?.programId && p.places.includes('gym') ? { ...p.enrollments, gym: { programId: prog, startedAt: new Date().toISOString() } } : p.enrollments;
               save({ gymDays: v, daysPerWeek: v + runsPerWeekOf(p), enrollments }); setEdit(null);
             }} />
-          <p className="mt-3 text-[13px] text-ink2">Gymprogrammet byts till det som passar antalet pass. Löpningen påverkas inte.</p>
+          <p className="mt-3 text-[13px] text-ink2">Kör du Minimalist, Helkropp 3× eller Över/under byts programmet till det som passar antalet pass. Rullande och de andra programmen följer ditt antal. Löpningen påverkas inte.</p>
         </div>
       </Sheet>
       <Sheet open={edit === 'weekdays'} onClose={() => setEdit(null)} title="Träningsdagar">

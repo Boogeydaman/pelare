@@ -25,7 +25,7 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
     const next = { ...ctx.profile, goals, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } };
     // Picking a gym program also sets the number of gym sessions to what it is built for.
     const perWeek = m.programs.find((x) => x.id === programId)?.perWeek;
-    if (m.id === 'gym' && perWeek) next.gymDays = perWeek;
+    if (m.id === 'gym' && perWeek && programId !== 'rolling') next.gymDays = perWeek;
     saveProfile({ ...next, daysPerWeek: gymDaysOf(next) + runsPerWeekOf(next) });
   };
 

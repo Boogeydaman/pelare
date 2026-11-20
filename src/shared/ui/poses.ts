@@ -392,3 +392,67 @@ export const ANIMS: Record<string, Anim> = {
 ANIMS.bench_db = { ...ANIMS.bench, held: 'db' };
 ANIMS.incline_db = { ...ANIMS.incline, held: 'db' };
 ANIMS.row_bar = { ...ANIMS.row, held: 'bar' };
+
+// ======================================================== From the "every muscle" list and Total Body A/B
+ANIMS.front_squat = { held: 'bar', frames: [
+  stand({ arms: [[-5, 190]] }),
+  stand({ torso: -76, legs: [[8, 120]], arms: [[9, 204]] }),
+] };
+ANIMS.deadlift = { held: 'bar', frames: [
+  stand({ torso: -30, head: -20, legs: [[25, 115]], arms: [[90, 90]] }),
+  stand({ arms: [[90, 90]] }),
+] };
+ANIMS.lunge_bar = { held: 'bar', frames: [
+  stand({ arms: [[150, -70]] }),
+  stand({ torso: -88, legs: [[2, 92], [110, 188]], arms: [[150, -70]], feet: [0, 40] }),
+] };
+ANIMS.ghr = { anchor: 'K', ms: 1500, dx: -30,
+  props: (p) => [{ kind: 'rect', x: p.K[0] - 10, y: p.K[1] - 2, w: 18, h: FLOOR - p.K[1] + 2 }],
+  frames: [
+    { torso: -90, legs: [[90, 180]], arms: [[70, -120]] },
+    { torso: -20, head: -10, legs: [[160, 180]], arms: [[0, -50]] },
+  ] };
+ANIMS.side_walk = { view: 'front', loop: true, anchor: null, ms: 700, hold: 0.15, frames: [
+  { torso: -90, legs: [[75, 100], [105, 80]], arms: [[140, 60], [40, 120]] },
+  { torso: -90, legs: [[62, 110], [118, 70]], arms: [[140, 60], [40, 120]] },
+] };
+ANIMS.cross_lh = { view: 'front', anchor: null, frames: [
+  fstand({ arms: [[60, 75], [120, 105]] }),
+  fstand({ arms: [[-30, -150], [210, -30]] }),
+] };
+ANIMS.skull = { held: 'bar', anchor: 'F',
+  props: (p) => [{ kind: 'rect', x: p.S[0] - 14, y: p.H[1] + 3, w: p.H[0] - p.S[0] + 20, h: FLOOR - p.H[1] - 3 }],
+  frames: [
+    { torso: 180, head: 180, legs: [[12, 95]], arms: [[-105, -105]], on: ['F', FLOOR] },
+    { torso: 180, head: 180, legs: [[12, 95]], arms: [[-105, 155]], on: ['F', FLOOR] },
+  ] };
+ANIMS.high_row = { cable: (p) => [p.W[0] + 14, p.W[1] - 16], frames: [
+  stand({ torso: -84, arms: [[-45, -45]] }),
+  stand({ torso: -88, arms: [[115, -60]] }),
+] };
+ANIMS.straight_pd = { cable: (p) => [p.W[0] + 14, p.W[1] - 18], frames: [
+  stand({ torso: -78, legs: [[85, 95]], arms: [[-40, -45]] }),
+  stand({ torso: -78, legs: [[85, 95]], arms: [[92, 95]] }),
+] };
+ANIMS.shrug = { held: 'db', ms: 1000, frames: [
+  stand({ arms: [[90, 90]] }),
+  stand({ head: -96, arms: [[102, 86]] }),
+] };
+ANIMS.high_pull = { held: 'bar', ms: 1000, frames: [
+  stand({ torso: -70, legs: [[78, 102]], arms: [[90, 90]] }),
+  stand({ torso: -92, arms: [[-165, 25]] }),
+] };
+ANIMS.front_raise = { held: 'db', anchor: 'F',
+  props: (p) => [...seat(22)(p), { kind: 'line', x1: p.H[0] - 3, y1: p.H[1] + 3, x2: p.S[0] - 4, y2: p.S[1] + 5 }],
+  frames: [
+    { torso: -125, head: -110, legs: [[0, 95]], arms: [[95, 95]], on: ['F', FLOOR] },
+    { torso: -125, head: -110, legs: [[0, 95]], arms: [[-8, -8]], on: ['F', FLOOR] },
+  ] };
+ANIMS.carry = { held: 'dbs', loop: true, anchor: null, ms: 550, hold: 0.05, frames: [
+  { torso: -90, legs: [[72, 102], [106, 96]], arms: [[92, 90], [88, 90]], feet: [0, 20] },
+  { torso: -90, legs: [[106, 96], [72, 102]], arms: [[92, 90], [88, 90]], feet: [20, 0] },
+] };
+ANIMS.oh_carry = { held: 'dbs', loop: true, anchor: null, ms: 600, hold: 0.05, frames: [
+  { torso: -90, legs: [[74, 100], [104, 96]], arms: [[-76, -82], [-74, -80]], feet: [0, 20] },
+  { torso: -90, legs: [[104, 96], [74, 100]], arms: [[-76, -82], [-74, -80]], feet: [20, 0] },
+] };

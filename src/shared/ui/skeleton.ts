@@ -35,6 +35,7 @@ export interface Anim {
   plate?: boolean; // leg press plate at the feet
   props?: (p0: Pose) => Shape[]; // fixed equipment, placed from the first frame
   cable?: (p0: Pose) => P; // a cable from this point to the hands
+  dx?: number; // nudge the whole figure sideways (movements that travel far to one side)
 }
 
 export const FLOOR = 106;
@@ -121,7 +122,7 @@ export function first(anim: Anim): Pose {
   let p = shift(raw, 0, dy);
   if (anim.anchor !== null) {
     const xs = Object.entries(p).map(([k, v]) => (k === 'N' ? [v[0] - HEAD_R, v[0] + HEAD_R] : [v[0]])).flat();
-    p = shift(p, 60 - (Math.min(...xs) + Math.max(...xs)) / 2, 0);
+    p = shift(p, 60 - (Math.min(...xs) + Math.max(...xs)) / 2 + (anim.dx ?? 0), 0);
   }
   firstCache.set(anim, p);
   return p;
