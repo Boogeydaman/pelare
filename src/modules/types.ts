@@ -18,6 +18,8 @@ export interface ModuleCtx {
 
 export interface PlayerProps {
   plan: PlannedSession;
+  /** Unique per started session – lets a player save its progress so a reload does not lose it. */
+  storageKey: string;
   onProgress: (p: number) => void;
   onFinish: (data?: LogData) => void;
 }

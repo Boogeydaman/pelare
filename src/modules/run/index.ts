@@ -2,7 +2,7 @@ import { Footprints } from 'lucide-react';
 import { createElement } from 'react';
 import type { LibraryItem, Metric, ProgramOption } from '../../core/types';
 import { Field, NumberInput, QuickLog, parseNum } from '../../shared/ui/fields';
-import { fmt1, thisWeek, weeklySeries } from '../common';
+import { fmt1, thisWeek, weeklySeries, weeklySplit } from '../common';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { RunPlayer } from './Player';
 import { HARD_TYPES, STAGES, easy, easyShare, guard, km, next, runs, stage, strides, tempo, test5k } from './planner';
@@ -61,7 +61,7 @@ export const run: TrainingModule = {
       { id: 'log', label: 'Logga i efterhand', hint: 'Sprang du med klockan?', to: '/lopning/logga' },
     ];
   },
-  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: Math.max(2, program(ctx).perWeek), unit: 'pass' }),
+  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: weeklySplit(ctx.profile, 4, program(ctx).perWeek).run, unit: 'pass' }),
 
   programs: PROGRAMS,
   program(ctx) {

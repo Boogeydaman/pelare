@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { coach, type TodayView } from '../core/coach';
 import { useCtx } from '../core/ctx';
-import { saveCheckin } from '../core/db';
+import { removeSampleData, saveCheckin, useActive } from '../core/db';
 import { fmtDayLong } from '../core/format';
 import { useStart } from '../core/start';
 import type { CheckIn, Feeling, PlannedSession } from '../core/types';
@@ -19,6 +19,7 @@ const FEELING: Record<Feeling, string> = { pigg: 'Pigg', okej: 'Okej', trott: 'T
 export function Today() {
   const ctx = useCtx();
   const start = useStart();
+  const active = useActive();
   const nav = useNavigate();
   const [formOpen, setFormOpen] = useState(false);
   const [peek, setPeek] = useState(false);
@@ -46,7 +47,16 @@ export function Today() {
         <IconButton ariaLabel="Inställningar" onClick={() => nav('/installningar')}><Settings2 size={22} strokeWidth={1.75} /></IconButton>
       </header>
 
-      <div className="mt-8"><InstallCard /></div>
+      <button onClick={() => setFormOpen(true)} className="mt-6 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-5 py-3.5 text-left">
+        <span>
+          <span className="block text-[13px] text-ink2">Dagsform</span>
+          <span className="block text-[17px] font-medium">{FEELING[c.feeling]} · {c.minutes} min · {c.place === 'gym' ? 'gym' : c.place === 'home' ? 'hemma' : 'på resa'}</span>
+        </span>
+        <span className="text-[15px] text-ink2">Ändra</span>
+      </button>
+
+      <SampleBanner />
+      <div className="mt-6"><InstallCard /></div>
 
       <section key={main.id} className="rise mt-12">
         <Kicker kind={main.module}>{main.id === view.today.primary.id ? 'Dagens pass' : 'Ditt val'} · {MODULE_NAME[main.module]}</Kicker>
@@ -84,13 +94,6 @@ export function Today() {
 
       <WeekLeft view={view.today} />
 
-      <button onClick={() => setFormOpen(true)} className="mt-8 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-5 py-4 text-left">
-        <span>
-          <span className="block text-[13px] text-ink2">Dagsform</span>
-          <span className="block text-[17px] font-medium">{FEELING[c.feeling]} · {c.minutes} min{ctx.profile.places.length > 1 ? ` · ${c.place === 'gym' ? 'gym' : 'hemma'}` : ''}</span>
-        </span>
-        <span className="text-[15px] text-ink2">Ändra</span>
-      </button>
 
       <section className="mt-10">
         <Kicker>Eller</Kicker>
@@ -105,7 +108,9 @@ export function Today() {
 
       <div className="h-24" />
       <div className="safe-bottom fixed inset-x-0 bottom-[58px] z-20 mx-auto max-w-lg bg-gradient-to-t from-paper via-paper/95 to-transparent px-6 pb-3 pt-8">
-        <Primary kind={main.module} onClick={() => start(main)}><Play size={18} fill="currentColor" /> Starta</Primary>
+        {active
+          ? <Primary kind={active.plan.module === 'rest' ? 'rest' : active.plan.module} onClick={() => nav('/pass')}><Play size={18} fill="currentColor" /> Fortsätt: {active.plan.title}</Primary>
+          : <Primary kind={main.module} onClick={() => start(main)}><Play size={18} fill="currentColor" /> Starta</Primary>}
       </div>
 
       <Sheet open={peek} onClose={() => setPeek(false)} title={main.title}>
@@ -127,13 +132,12 @@ export function Today() {
             <Segmented label="Tid" value={c.minutes} onChange={(v) => setCheckin({ minutes: v })}
               options={[20, 30, 45, 60, 90].map((n) => ({ value: n, label: String(n) }))} />
           </div>
-          {ctx.profile.places.length > 1 && (
-            <div>
-              <div className="mb-2 text-[14px] text-ink2">Var?</div>
-              <Segmented label="Plats" value={c.place} onChange={(v) => setCheckin({ place: v })}
-                options={[{ value: 'gym', label: 'Gym' }, { value: 'home', label: 'Hemma' }]} />
-            </div>
-          )}
+          <div>
+            <div className="mb-2 text-[14px] text-ink2">Var tränar du i dag?</div>
+            <Segmented label="Plats" value={c.place} onChange={(v) => setCheckin({ place: v })}
+              options={[{ value: 'gym', label: 'Gym' }, { value: 'home', label: 'Hemma' }, { value: 'travel', label: 'På resa' }]} />
+            <p className="mt-2 text-[13px] text-ink2">{c.place === 'travel' ? 'Inga redskap: dagens pass görs i kroppsvikt och räknas i programmet som vanligt.' : c.place === 'home' ? 'Passet anpassas efter utrustningen du har hemma.' : 'Hela gymmet.'}</p>
+          </div>
           <Primary onClick={() => setFormOpen(false)}>Klar</Primary>
         </div>
       </Sheet>
@@ -194,6 +198,18 @@ function WeekLeft({ view }: { view: TodayView }) {
         </li>
       </ul>
       <p className="mt-2 text-[13px] text-ink2">150 minuter kondition och styrka två dagar i veckan är WHO:s rekommendation för vuxna.</p>
+    </section>
+  );
+}
+
+/** Shown while the seeded example history is still in the app. */
+function SampleBanner() {
+  const ctx = useCtx();
+  if (!ctx?.logs.some((l) => l.sample)) return null;
+  return (
+    <section className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-rule px-5 py-4">
+      <p className="text-[15px] leading-snug">Du ser exempeldata så att skärmarna har något att visa. Ta bort den när du börjar träna på riktigt.</p>
+      <button onClick={() => removeSampleData()} className="h-11 shrink-0 rounded-full bg-ink px-4 text-[14px] font-semibold text-paper">Ta bort</button>
     </section>
   );
 }

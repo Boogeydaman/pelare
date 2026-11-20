@@ -6,6 +6,8 @@ export const MODULES: ModuleId[] = ['gym', 'run', 'mobility'];
 
 export type Feeling = 'pigg' | 'okej' | 'trott' | 'sjuk';
 export type Place = 'gym' | 'home';
+/** Where you train today: a profile place, or travelling with no equipment at all. */
+export type Where = Place | 'travel';
 export type Effort = 'lugnt' | 'medel' | 'hårt';
 export type Feel = 1 | 2 | 3; // lätt, lagom, tungt
 export type Equip = 'dumbbell' | 'band' | 'pullup_bar' | 'bench' | 'kettlebell';
@@ -31,7 +33,7 @@ export interface Profile {
   createdAt: string;
 }
 
-export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Place }
+export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where }
 
 // ---------- Plans ----------
 
@@ -68,7 +70,7 @@ export interface PlannedSession {
 // ---------- Logs ----------
 
 export interface SetResult { kg: number; reps: number }
-export interface ExerciseResult { id: string; name: string; sets: SetResult[]; feel?: Feel }
+export interface ExerciseResult { id: string; name: string; sets: SetResult[]; feel?: Feel; unit?: 'sek' }
 
 export type LogData =
   | { kind: 'strength'; exercises: ExerciseResult[] }

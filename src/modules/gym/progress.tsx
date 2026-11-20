@@ -16,7 +16,8 @@ const heaviest = (d: Done) => Math.max(...d.result.sets.map((s) => s.kg));
 const mostReps = (d: Done) => Math.max(...d.result.sets.map((s) => s.reps));
 const setsText = (d: Done) => {
   const kg = heaviest(d);
-  return `${kg > 0 ? `${fmtNum(kg)} kg × ` : ''}${d.result.sets.map((s) => s.reps).join(', ')}`;
+  const u = d.result.unit === 'sek' ? ' s' : '';
+  return `${kg > 0 ? `${fmtNum(kg)} kg × ` : ''}${d.result.sets.map((s) => s.reps + u).join(', ')}`;
 };
 
 /** Records set by `log` compared with everything before it. First time doing an exercise is not a record. */
@@ -35,7 +36,7 @@ export function gymRecords(prev: SessionLog[], log: SessionLog): RecordItem[] {
         out.push({ module: 'gym', date: log.startedAt, title: name, detail: `Nytt rekord: ${fmtNum(top.kg)} kg × ${top.reps}` });
       }
     } else if (mostReps(now) > Math.max(...before.map(mostReps))) {
-      out.push({ module: 'gym', date: log.startedAt, title: name, detail: `Flest reps hittills: ${mostReps(now)}` });
+      out.push({ module: 'gym', date: log.startedAt, title: name, detail: r.unit === 'sek' ? `Längsta tiden hittills: ${mostReps(now)} s` : `Flest reps hittills: ${mostReps(now)}` });
     }
   }
   return out;

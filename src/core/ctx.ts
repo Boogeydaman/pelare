@@ -17,7 +17,9 @@ export function CtxProvider({ children }: { children: ReactNode }) {
   const recent = useRecentCheckins(todayKey(new Date(Date.now() - 14 * 864e5)));
   const value = useMemo(() => {
     if (!profile || !logs || !tests || stored === undefined || !recent) return undefined;
-    const checkin: CheckIn = stored ?? { date: key, feeling: 'okej', minutes: 45, place: profile.places[0] };
+    // New day: start from the time and place used last time (not the feeling – that is today's).
+    const lastUsed = [...recent].sort((a, b) => b.date.localeCompare(a.date))[0];
+    const checkin: CheckIn = stored ?? { date: key, feeling: 'okej', minutes: lastUsed?.minutes ?? 45, place: lastUsed?.place ?? profile.places[0] };
     return { profile, logs, tests, checkin, now: new Date(), recentCheckins: recent };
   }, [profile, logs, tests, stored, key, recent]);
   return createElement(Ctx.Provider, { value }, children);

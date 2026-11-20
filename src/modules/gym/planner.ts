@@ -23,8 +23,9 @@ const RECOVERY_H = 44;
 
 // ---------------------------------------------------------------- Equipment
 
-export function equipmentAt(profile: Profile, place: 'gym' | 'home'): Set<Need> {
+export function equipmentAt(profile: Profile, place: 'gym' | 'home' | 'travel'): Set<Need> {
   if (place === 'gym') return new Set(ALL_NEEDS);
+  if (place === 'travel') return new Set();
   const map: Record<string, Need> = { dumbbell: 'dumbbell', kettlebell: 'dumbbell', band: 'band', pullup_bar: 'pullup_bar', bench: 'bench' };
   return new Set(profile.homeEquipment.map((e) => map[e]).filter(Boolean));
 }
@@ -210,12 +211,12 @@ export function build(ctx: ModuleCtx, tpl: SessionTemplate, opts: { minutes?: nu
     ...(opts.reasons ?? []),
     ...(low.length ? [`${low.map((m) => MUSCLE_NAME[m]).join(' och ')}: ${low.map((m) => fmtKg(week[m])).join(' och ')} av ${goal} set den här veckan.`] : []),
     ...progress,
-    ...(swapped.length ? [`Anpassat för ${place === 'home' ? 'hemma' : 'gymmet'}: ${swapped.slice(0, 2).join(', ').toLowerCase()}.`] : []),
+    ...(swapped.length ? [`Anpassat ${place === 'travel' ? 'utan utrustning' : place === 'home' ? 'för hemma' : 'för gymmet'}: ${swapped.slice(0, 3).join(', ').toLowerCase()} i stället för programmets övningar. Passet räknas i programmet som vanligt.`] : []),
     ...(tired.length >= 2 ? [`${tired.slice(0, 2).map((m) => MUSCLE_NAME[m]).join(' och ')} tränades hårt nyss – vänta gärna en dag.`] : []),
   ];
 
   return {
-    id: `gym:${tpl.type}`, module: 'gym', type: tpl.type, title: tpl.title + (place === 'home' && swapped.length ? ' hemma' : ''),
+    id: `gym:${tpl.type}`, module: 'gym', type: tpl.type, title: tpl.title + (swapped.length ? (place === 'travel' ? ' utan utrustning' : place === 'home' ? ' hemma' : '') : ''),
     minutes: estimateMinutes(items), effort: 'hårt',
     summary: `${items.length} övningar · ${items.reduce((a, i) => a + i.sets, 0)} set`,
     reasons: reasons.map((text) => ({ text })),
@@ -228,7 +229,8 @@ export function lastText(d?: Done): string | undefined {
   if (!d) return undefined;
   const sets = d.result.sets;
   const kg = Math.max(...sets.map((x) => x.kg));
-  return `${fmtDate(d.date)} · ${kg > 0 ? `${fmtKg(kg)} kg × ` : ''}${sets.map((x) => x.reps).join(', ')}`;
+  const u = d.result.unit === 'sek' ? ' s' : '';
+  return `${fmtDate(d.date)} · ${kg > 0 ? `${fmtKg(kg)} kg × ` : ''}${sets.map((x) => x.reps + u).join(', ')}`;
 }
 
 function toItem(t: Target, slot: Slot, last?: Done): StrengthItem {

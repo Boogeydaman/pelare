@@ -1,5 +1,5 @@
 import { Minus, Plus } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { fmtClock, fmtNum, vibrate } from '../../core/format';
 import type { ExerciseResult, Feel, StrengthItem } from '../../core/types';
 import { Dim, ON, ON_DIM, ON_LINE, OnButton, RoundButton } from '../../shared/player/parts';
@@ -7,14 +7,31 @@ import { useCountdown } from '../../shared/ui/hooks';
 import { Ring } from '../../shared/ui/kit';
 import type { PlayerProps } from '../types';
 
-export function GymPlayer({ plan, onProgress, onFinish }: PlayerProps) {
+interface Saved { ex: number; set: number; phase: 'work' | 'feel'; kg: number; reps: number; results: ExerciseResult[] }
+const KEY = 'pelare.gymplayer';
+
+function restore(storageKey: string): Saved | null {
+  try {
+    const raw = JSON.parse(localStorage.getItem(KEY) ?? 'null');
+    return raw && raw.key === storageKey ? (raw.state as Saved) : null;
+  } catch { return null; }
+}
+
+export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter }: PlayerProps) {
   const items: StrengthItem[] = plan.content.kind === 'strength' ? plan.content.items : [];
-  const [ex, setEx] = useState(0);
-  const [set, setSet] = useState(0);
-  const [phase, setPhase] = useState<'work' | 'rest' | 'feel'>('work');
-  const [kg, setKg] = useState(items[0]?.kg ?? 20);
-  const [reps, setReps] = useState(items[0]?.target ?? items[0]?.reps[0] ?? 8);
-  const [results, setResults] = useState<ExerciseResult[]>(items.map((i) => ({ id: i.id, name: i.name, sets: [] })));
+  const saved = useMemo(() => restore(storageKey), [storageKey]);
+  const [ex, setEx] = useState(saved?.ex ?? 0);
+  const [set, setSet] = useState(saved?.set ?? 0);
+  const [phase, setPhase] = useState<'work' | 'rest' | 'feel'>(saved?.phase ?? 'work');
+  const [kg, setKg] = useState(saved?.kg ?? items[0]?.kg ?? 20);
+  const [reps, setReps] = useState(saved?.reps ?? items[0]?.target ?? items[0]?.reps[0] ?? 8);
+  const [results, setResults] = useState<ExerciseResult[]>(saved?.results ?? items.map((i) => ({ id: i.id, name: i.name, sets: [], unit: i.unit === 'sek' ? 'sek' : undefined })));
+
+  // Save after every change so a locked phone or reload does not lose the session.
+  useEffect(() => {
+    try { localStorage.setItem(KEY, JSON.stringify({ key: storageKey, state: { ex, set, phase: phase === 'rest' ? 'work' : phase, kg, reps, results } })); } catch { /* ignore */ }
+  }, [storageKey, ex, set, phase, kg, reps, results]);
+  const onFinish: typeof finishOuter = (data) => { try { localStorage.removeItem(KEY); } catch { /* ignore */ } finishOuter(data); };
   const rest = useCountdown(useCallback(() => { vibrate([200, 100, 200]); setPhase('work'); }, []));
   const it = items[ex];
   const totalSets = items.reduce((a, i) => a + i.sets, 0);

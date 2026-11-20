@@ -52,7 +52,7 @@ export function Onboarding() {
 
   const finish = async () => {
     const now = new Date().toISOString();
-    const gymProgram = !places.includes('gym') ? (equip.includes('dumbbell') ? 'home' : 'bodyweight') : days >= 4 ? 'upperlower' : 'fullbody';
+    const gymProgram = !places.includes('gym') ? (equip.includes('dumbbell') ? 'home_db' : 'bodyweight') : days <= 2 ? 'minimal' : 'fullbody';
     const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
     const profile: Profile = {
       goals: { ...goals, mobility: legacy }, daysPerWeek: days, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,

@@ -41,7 +41,7 @@ export function PlayerPage() {
           <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress * 100}%`, background: ON }} />
         </div>
         <main className="flex flex-1 flex-col pt-8">
-          {Body ? <Body plan={plan} onProgress={setProgress} onFinish={finish} /> : (
+          {Body ? <Body plan={plan} storageKey={`${plan.id}:${active.startedAt}`} onProgress={setProgress} onFinish={finish} /> : (
             <div className="flex flex-1 flex-col">
               <h1 className="font-serif text-display">Vila</h1>
               <Dim className="mt-4 text-[19px] leading-snug">{plan.content.kind === 'rest' ? plan.content.text : ''}</Dim>

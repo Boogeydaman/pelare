@@ -41,7 +41,7 @@ export function ResultList({ data }: { data?: LogData }) {
         {data.exercises.map((e) => (
           <li key={e.id} className="border-t border-rule py-3">
             <div className="text-[17px] font-medium">{e.name}</div>
-            <div className="num text-[15px] text-ink2">{e.sets.map((s) => (s.kg ? `${fmtNum(s.kg)} × ${s.reps}` : `${s.reps}`)).join('  ·  ')}</div>
+            <div className="num text-[15px] text-ink2">{e.sets.map((s) => (s.kg ? `${fmtNum(s.kg)} × ${s.reps}` : `${s.reps}${e.unit === 'sek' ? ' s' : ''}`)).join('  ·  ')}</div>
           </li>
         ))}
       </ul>

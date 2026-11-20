@@ -1,5 +1,5 @@
 import { weekStart } from '../core/format';
-import type { ModuleId, ProgramOption, SessionLog } from '../core/types';
+import type { ModuleId, Profile, ProgramOption, SessionLog } from '../core/types';
 import type { ModuleCtx } from './types';
 
 export const DAY = 864e5;
@@ -31,3 +31,15 @@ export function weeklySeries(logs: SessionLog[], now: Date, weeks: number, value
 }
 
 export const fmt1 = (n: number) => (Math.round(n * 10) / 10).toString().replace('.', ',');
+
+/**
+ * Split the user's training days between gym and running so the week adds up.
+ * Running gets about half the days (at least 1), gym the rest but always ≥2 (health.floor [25]).
+ * Each is capped by what the chosen program asks for.
+ */
+export function weeklySplit(profile: Profile, gymPerWeek: number, runPerWeek: number): { gym: number; run: number } {
+  const D = profile.daysPerWeek;
+  const run = Math.max(1, Math.min(runPerWeek, Math.floor(D / 2)));
+  const gym = Math.max(2, Math.min(gymPerWeek, D - run));
+  return { gym, run };
+}

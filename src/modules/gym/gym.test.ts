@@ -2,7 +2,8 @@ import { describe, expect, it } from 'vitest';
 import type { ExerciseResult, Feel, Profile, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
 import { EX, EXERCISES, type Muscle } from './exercises';
-import { build, equipmentAt, resolve, target, volume, weeklyTarget } from './planner';
+import { weeklySplit } from '../common';
+import { build, equipmentAt, nextTemplate, resolve, target, volume, weeklyTarget } from './planner';
 import { PROGRAMS } from './programs';
 import { gymRecords } from './progress';
 
@@ -166,5 +167,27 @@ describe('Rekord', () => {
     const r = gymRecords([a], b);
     expect(r.some((x) => x.detail.includes('80 kg × 10'))).toBe(true);
     expect(r.some((x) => x.detail.includes('8'))).toBe(true);
+  });
+});
+
+describe('På resa och veckans fördelning', () => {
+  it('på resa: dagens programpass i kroppsvikt, med samma typ så att det räknas i programmet', () => {
+    const c = ctx({ checkin: { date: '2026-11-20', feeling: 'okej', minutes: 60, place: 'travel' } });
+    const { tpl } = nextTemplate(c, PROGRAMS[0]);
+    const s = build(c, tpl);
+    expect(s.type).toBe(tpl.type);
+    if (s.content.kind === 'strength') for (const i of s.content.items) expect(EX[i.id].needs, i.id).toEqual([]);
+    // After logging it, the program moves on to the next session.
+    const logged: SessionLog = { id: 'x', module: 'gym', type: s.type, title: s.title, startedAt: ago(1), minutes: 40 };
+    expect(nextTemplate(ctx({ logs: [logged] }), PROGRAMS[0]).tpl.type).not.toBe(tpl.type);
+  });
+
+  it('gym och löpning ryms i dina träningsdagar och gym är alltid minst två', () => {
+    for (const d of [2, 3, 4, 5, 6]) {
+      const { gym, run } = weeklySplit(profile({ daysPerWeek: d }), 4, 3);
+      expect(gym, `${d} dagar`).toBeGreaterThanOrEqual(2);
+      expect(run, `${d} dagar`).toBeGreaterThanOrEqual(1);
+      if (d >= 3) expect(gym + run, `${d} dagar`).toBeLessThanOrEqual(d);
+    }
   });
 });
