@@ -4,9 +4,10 @@
 set -e
 GH="${GH:-gh}"; command -v "$GH" >/dev/null || GH="/c/Program Files/GitHub CLI/gh.exe"
 D="$HOME/pelare-signering"; mkdir -p "$D"
+command -v cygpath >/dev/null && D="$(cygpath -m "$D")"  # Windows openssl needs C:/… paths
 if [ ! -f "$D/pelare.p12" ]; then
   PW=$(openssl rand -hex 24)
-  MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -keyout "$D/key.pem" -out "$D/cert.pem" -days 10950 -subj "/CN=Pelare" 2>/dev/null
+  MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -keyout "$D/key.pem" -out "$D/cert.pem" -days 10950 -subj "/CN=Pelare"
   openssl pkcs12 -export -inkey "$D/key.pem" -in "$D/cert.pem" -name pelare -out "$D/pelare.p12" -passout "pass:$PW" -keypbe AES-256-CBC -certpbe AES-256-CBC -macalg sha256
   rm "$D/key.pem" "$D/cert.pem"; printf '%s' "$PW" > "$D/losenord.txt"
 fi
