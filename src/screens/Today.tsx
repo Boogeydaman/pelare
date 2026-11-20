@@ -49,7 +49,7 @@ export function Today() {
         <IconButton ariaLabel="Inställningar" onClick={() => nav('/installningar')}><Settings2 size={22} strokeWidth={1.75} /></IconButton>
       </header>
 
-      <button onClick={() => setFormOpen(true)} className="mt-6 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-5 py-3.5 text-left">
+      <button onClick={() => setFormOpen(true)} className="mt-4 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-4 py-2.5 text-left">
         <span>
           <span className="block text-[13px] text-ink2">Dagsform</span>
           <span className="block text-[17px] font-medium">{FEELING[c.feeling]} · {c.minutes} min · {c.place === 'gym' ? 'gym' : c.place === 'home' ? 'hemma' : 'på resa'}</span>
@@ -58,35 +58,43 @@ export function Today() {
       </button>
 
       <SampleBanner />
-      <div className="mt-6"><InstallCard /></div>
+      <div className="mt-4 empty:hidden"><InstallCard /></div>
 
-      <section key={main.id} className="rise mt-12">
+      <section key={main.id} className="rise mt-7">
         <Kicker kind={main.module}>{main.id === view.today.primary.id ? 'Dagens pass' : 'Ditt val'} · {MODULE_NAME[main.module]}</Kicker>
-        <h1 className="mt-3 font-serif text-display">{main.title}</h1>
-        <Meta s={main} className="mt-3" />
-        <ul className="mt-7">
-          {main.reasons.slice(0, 3).map((r, i) => <li key={i} className="border-t border-rule py-3 text-[16px] leading-snug">{r.text}</li>)}
+        <h1 className="mt-2 font-serif text-[40px] leading-[1.02]">{main.title}</h1>
+        <Meta s={main} className="mt-2" />
+        <ul className="mt-4">
+          {main.reasons.slice(0, 3).map((r, i) => <li key={i} className="border-t border-rule py-2 text-[15px] leading-snug">{r.text}</li>)}
         </ul>
-        <button onClick={() => setPeek(true)} className="flex min-h-[48px] w-full items-center gap-1 border-t border-rule text-[16px] font-medium">
+        <button onClick={() => setPeek(true)} className="flex min-h-[44px] w-full items-center gap-1 border-t border-rule text-[15px] font-medium">
           Visa hela passet <ChevronRight size={18} strokeWidth={1.75} />
         </button>
       </section>
 
-      {main.id === view.today.primary.id && view.today.addOns.length > 0 && (
-        <section className="mt-6">
-          <Kicker>Passar ihop med, om tiden räcker</Kicker>
-          <div className="mt-1">
+      {(main.module === 'gym' || main.module === 'run') && view.today.addOns.length > 0 && (
+        <section className="mt-3 rounded-2xl px-4 py-3" style={{ background: color('mobility', 0.1) }}>
+          <div className="text-[13px] font-medium" style={{ color: color('mobility') }}>Gör det till en vana: före och efter</div>
+          <ul className="mt-1">
             {view.today.addOns.map((a) => (
-              <Row key={a.when} title={`${a.when === 'före' ? 'Före' : 'Efter'}: ${a.label}`} sub={a.hint} onClick={() => start(a.session)} />
+              <li key={a.when}>
+                <button onClick={() => start(a.session)} className="flex min-h-[48px] w-full items-center justify-between gap-3 text-left">
+                  <span className="min-w-0">
+                    <span className="block text-[16px] font-medium">{a.when === 'före' ? 'Före' : 'Efter'}: {a.label}</span>
+                    <span className="block text-[13px] text-ink2">{a.fits ? '' : '+'}{a.hint}</span>
+                  </span>
+                  <Play size={16} className="shrink-0" style={{ color: color('mobility') }} aria-hidden="true" />
+                </button>
+              </li>
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
       <YourWeek plan={view.plan} />
 
       {view.today.notes.length > 0 && (
-        <section className="mt-8 rounded-2xl bg-ink/[0.05] px-5 py-4">
+        <section className="mt-6 rounded-2xl bg-ink/[0.05] px-4 py-3">
           <div className="text-[13px] font-medium text-ink2">Hänsyn i dag</div>
           <ul className="mt-1">
             {view.today.notes.map((n, i) => <li key={i} className="py-1.5 text-[15px] leading-snug">{n.text}</li>)}
@@ -99,7 +107,7 @@ export function Today() {
       <WeekLeft view={view.today} />
 
 
-      <section className="mt-10">
+      <section className="mt-8">
         <Kicker>Eller</Kicker>
         <div className="mt-2">
           {others.map((s: PlannedSession) => (
@@ -154,18 +162,18 @@ function WhyToday({ kind }: { kind: PlannedSession['module'] }) {
   const p = PRINCIPLE[kind];
   const a = articleFor(kind);
   return (
-    <section className="mt-10 rounded-[28px] border border-rule px-6 py-6">
+    <section className="mt-8 rounded-[24px] border border-rule px-5 py-5">
       <Kicker kind={kind}>Därför i dag</Kicker>
-      <h2 className="mt-2 font-serif text-[30px] leading-[1.05]">{p.title}</h2>
-      <p className="mt-3 text-[16px] leading-relaxed">{p.text}</p>
-      <div className="mt-5 flex flex-col">
-        <Link to={`/las/${a.id}`} className="flex min-h-[48px] items-center justify-between border-t border-rule text-[16px] font-medium">
+      <h2 className="mt-1 font-serif text-[26px] leading-[1.05]">{p.title}</h2>
+      <p className="mt-2 text-[15px] leading-snug">{p.text}</p>
+      <div className="mt-3 flex flex-col">
+        <Link to={`/las/${a.id}`} className="flex min-h-[44px] items-center justify-between border-t border-rule text-[15px] font-medium">
           <span>Läs: {a.title}</span><ChevronRight size={18} strokeWidth={1.75} />
         </Link>
-        <Link to={`/las/${ARTICLE['dagens-pass'].id}`} className="flex min-h-[48px] items-center justify-between border-t border-rule text-[15px] text-ink2">
+        <Link to={`/las/${ARTICLE['dagens-pass'].id}`} className="flex min-h-[44px] items-center justify-between border-t border-rule text-[14px] text-ink2">
           <span>Så väljs ditt pass</span><ChevronRight size={18} strokeWidth={1.5} />
         </Link>
-        <Link to="/las" className="flex min-h-[48px] items-center justify-between border-t border-rule text-[15px] text-ink2">
+        <Link to="/las" className="flex min-h-[44px] items-center justify-between border-t border-rule text-[14px] text-ink2">
           <span>Alla artiklar</span><ChevronRight size={18} strokeWidth={1.5} />
         </Link>
       </div>
@@ -178,19 +186,19 @@ const SHORT: Record<string, string> = { gym: 'Gym', run: 'Löp', other: 'Annat' 
 /** Din vecka: done and planned sessions day by day, and why today matters. */
 function YourWeek({ plan }: { plan: WeekPlan }) {
   return (
-    <section className="mt-10">
+    <section className="mt-7">
       <div className="flex items-baseline justify-between">
         <Kicker>Din vecka</Kicker>
         <Link to="/installningar#dagar" className="text-[13px] text-ink2 underline underline-offset-4">Träningsdagar</Link>
       </div>
-      <p className={`mt-3 text-[16px] leading-snug ${plan.tone === 'tight' || plan.tone === 'over' ? 'font-medium' : ''}`}>{plan.message}</p>
-      <ol className="mt-4 grid grid-cols-7 gap-1" aria-label="Veckans plan">
+      <p className={`mt-2 text-[15px] leading-snug ${plan.tone === 'tight' || plan.tone === 'over' ? 'font-medium' : ''}`}>{plan.message}</p>
+      <ol className="mt-3 grid grid-cols-7 gap-1" aria-label="Veckans plan">
         {plan.days.map((d) => {
           const main = [...d.done.filter((m) => m !== 'mobility').map((m) => ({ m, done: true })), ...d.planned.map((m) => ({ m, done: false }))];
           const words = [...main.map((x) => `${x.done ? 'gjort' : 'planerat'}: ${MODULE_NAME[x.m]}`), d.mobility ? `stretch ${d.mobility === 'done' ? 'gjord' : 'planerad'}` : ''].filter(Boolean).join(', ');
           return (
             <li key={d.index} aria-label={`${d.label}${d.today ? ' (i dag)' : ''}: ${words || (d.past ? 'inget' : 'vila')}`}
-              className={`flex min-h-[92px] flex-col items-center gap-1.5 rounded-2xl px-0.5 py-2 ${d.today ? 'bg-ink/[0.07]' : ''}`}>
+              className={`flex min-h-[78px] flex-col items-center gap-1.5 rounded-2xl px-0.5 py-2 ${d.today ? 'bg-ink/[0.07]' : ''}`}>
               <span className={`text-[12px] ${d.today ? 'font-semibold text-ink' : 'text-ink2'}`}>{d.today ? 'I dag' : d.label}</span>
               {main.map((x, i) => {
                 const c = x.m === 'other' ? 'rgb(var(--ink2))' : color(x.m);
@@ -218,14 +226,14 @@ function YourWeek({ plan }: { plan: WeekPlan }) {
 /** What is left of the week, per pillar, plus the WHO health floor for aerobic minutes. */
 function WeekLeft({ view }: { view: TodayView }) {
   return (
-    <section className="mt-10">
+    <section className="mt-8">
       <div className="flex items-baseline justify-between">
         <Kicker>Kvar av veckan</Kicker>
         <span className="num text-[13px] text-ink2">{view.daysLeft} {view.daysLeft === 1 ? 'dag' : 'dagar'} kvar</span>
       </div>
       <ul className="mt-2">
         {view.week.map((w) => (
-          <li key={w.module} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-3 text-[15px]">
+          <li key={w.module} className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-2 text-[14px]">
             <span>{w.name}</span>
             <span className="flex gap-1" aria-hidden="true">
               {Array.from({ length: w.target }, (_, i) => (
@@ -235,7 +243,7 @@ function WeekLeft({ view }: { view: TodayView }) {
             <span className="num text-ink2">{w.done}/{w.target} {w.unit}</span>
           </li>
         ))}
-        <li className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-3 text-[15px]">
+        <li className="grid grid-cols-[6.5rem_1fr_auto] items-center gap-3 border-t border-rule py-2 text-[14px]">
           <span>Kondition</span>
           <span className="relative h-1.5 rounded-full bg-ink/10" aria-hidden="true">
             <span className="absolute inset-y-0 left-0 rounded-full bg-ink/60" style={{ width: `${Math.min(100, (view.aerobicMin / 150) * 100)}%` }} />

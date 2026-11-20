@@ -72,12 +72,13 @@ describe('Coachen', () => {
     expect(hard(v.primary)).toBe(false);
   });
 
-  it('uppvärmning och stretch föreslås när tiden räcker, och allt ryms', () => {
-    const v = coach(ctx(base, checkin('pigg', 90)), MODULE_LIST);
-    if (v.primary.module === 'gym' || v.primary.module === 'run') {
-      expect(v.addOns.length).toBeGreaterThan(0);
-      const total = v.primary.minutes + v.addOns.reduce((a, x) => a + x.session.minutes, 0);
-      expect(total).toBeLessThanOrEqual(90);
+  it('uppvärmning före och stretch efter föreslås alltid till gym och löpning', () => {
+    for (const minutes of [30, 45, 90]) {
+      const v = coach(ctx(base, checkin('pigg', minutes)), MODULE_LIST);
+      if (v.primary.module !== 'gym' && v.primary.module !== 'run') continue;
+      expect(v.addOns.map((a) => a.when)).toEqual(['före', 'efter']);
+      const total = v.primary.minutes + v.addOns.filter((a) => a.fits).reduce((a, x) => a + x.session.minutes, 0);
+      expect(total).toBeLessThanOrEqual(minutes);
     }
   });
 

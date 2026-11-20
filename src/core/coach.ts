@@ -14,7 +14,7 @@ export const REST: PlannedSession = {
   content: { kind: 'rest', text: 'Ta en lugn promenad, eller vila helt. Båda räknas.' },
 };
 
-export interface AddOn { when: 'före' | 'efter'; label: string; hint: string; session: PlannedSession }
+export interface AddOn { when: 'före' | 'efter'; label: string; hint: string; session: PlannedSession; fits: boolean }
 export interface WeekLine { module: ModuleId; name: string; done: number; target: number; unit: string }
 
 export interface TodayView {
@@ -195,13 +195,15 @@ function addOns(primary: PlannedSession, ctx: ModuleCtx, modules: TrainingModule
   const qs = mob.quickStarts(ctx);
   const warm = qs.find((q) => q.id === 'animal')?.session;
   const after = qs.find((q) => q.id === 'micro')?.session;
+  // Always recommended – the habit matters more than the minutes. `fits` says whether it fits today's time.
   let spare = ctx.checkin.minutes - primary.minutes;
   const out: AddOn[] = [];
-  if (warm && spare >= warm.minutes) {
-    out.push({ when: 'före', label: warm.title, hint: `${warm.minutes} min dynamisk uppvärmning`, session: warm });
-    spare -= warm.minutes;
+  if (warm) {
+    const fits = spare >= warm.minutes;
+    out.push({ when: 'före', label: warm.title, hint: `${warm.minutes} min · väcker leder och puls`, session: warm, fits });
+    if (fits) spare -= warm.minutes;
   }
-  if (after && spare >= after.minutes) out.push({ when: 'efter', label: after.title, hint: `${after.minutes} min stretch – räknas mot rörlighetsmålet`, session: after });
+  if (after) out.push({ when: 'efter', label: after.title, hint: `${after.minutes} min · räknas mot rörlighetsmålet`, session: after, fits: spare >= after.minutes });
   return out;
 }
 
