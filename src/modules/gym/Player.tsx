@@ -1,5 +1,6 @@
 import { ArrowLeftRight, Check, Info, ListOrdered, Minus, Plus } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { beep, unlockAudio } from '../../shared/ui/sound';
 import { fmtClock, fmtNum, vibrate } from '../../core/format';
 import type { ExerciseResult, Feel, StrengthItem } from '../../core/types';
 import { Dim, ON, ON_DIM, ON_LINE, OnButton, RoundButton } from '../../shared/player/parts';
@@ -56,7 +57,13 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
     if (n) { setKg(n.kg ?? 20); setReps(n.target ?? n.reps[0]); setResults((r) => r.map((x, i) => (i === ex ? { id: n.id, name: n.name, sets: [], unit: n.unit === 'sek' ? 'sek' : undefined } : x))); }
     setSwapOpen(false);
   };
-  const rest = useCountdown(useCallback(() => { vibrate([200, 100, 200]); setPhase('work'); }, []));
+  const rest = useCountdown(useCallback(() => { vibrate([200, 100, 200]); beep(3, 1046, 160); setPhase('work'); }, []));
+  // Ten seconds left of the rest: a short signal so you have time to get into position.
+  const warned = useRef(false);
+  useEffect(() => {
+    if (phase !== 'rest' || !rest.running) { warned.current = false; return; }
+    if (!warned.current && rest.total > 15 && rest.left <= 10) { warned.current = true; vibrate(120); beep(1, 660, 120); }
+  }, [phase, rest.running, rest.left, rest.total]);
   const it = items[ex];
   const totalSets = items.reduce((a, i) => a + i.sets, 0);
 
@@ -69,6 +76,7 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
 
   const done = () => {
     vibrate(30);
+    unlockAudio();
     setResults((r) => r.map((x, i) => (i === ex ? { ...x, sets: [...x.sets, { kg: it.bodyweight ? 0 : kg, reps }] } : x)));
     if (set + 1 < it.sets) { setSet(set + 1); setPhase('rest'); rest.start(it.restSec); } else setPhase('feel');
   };

@@ -1,4 +1,5 @@
-import { MapPin, Pause, Play, SkipForward } from 'lucide-react';
+import { MapPin, Pause, Play, SkipForward, Volume2 } from 'lucide-react';
+import { beep, sayPace, speak, unlockAudio } from '../../shared/ui/sound';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { fmtClock, vibrate } from '../../core/format';
 import { NATIVE } from '../../core/native';
@@ -22,7 +23,9 @@ const GPS_TEXT: Record<GpsStatus, string> = {
 interface Clock { startedAt: number | null; pausedAt: number | null; pausedMs: number; skipMs: number }
 const EMPTY: Clock = { startedAt: null, pausedAt: null, pausedMs: 0, skipMs: 0 };
 
-const readPref = () => { try { return localStorage.getItem('pelare.gps') !== '0'; } catch { return true; } };
+const readPref = (k = 'pelare.gps') => { try { return localStorage.getItem(k) !== '0'; } catch { return true; } };
+
+const sayMin = (sec: number) => (sec >= 90 ? `${Math.round(sec / 60)} minuter` : sec >= 60 ? '1 minut' : `${Math.round(sec)} sekunder`);
 
 export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProps) {
   const segments: RunSegment[] = useMemo(() => (plan.content.kind === 'run' ? plan.content.segments : []), [plan]);
@@ -31,7 +34,8 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const key = `pelare.runplayer:${storageKey}`;
   const [clock, setClockState] = useState<Clock>(() => { try { return { ...EMPTY, ...JSON.parse(localStorage.getItem(key) ?? '{}') }; } catch { return EMPTY; } });
   const setClock = (c: Clock) => { setClockState(c); try { localStorage.setItem(key, JSON.stringify(c)); } catch { /* ignore */ } };
-  const [gpsOn, setGpsOn] = useState(readPref);
+  const [gpsOn, setGpsOn] = useState(() => readPref());
+  const [voiceOn, setVoiceOn] = useState(() => readPref('pelare.voice'));
   const ctx = useCtx();
   const zones = useMemo(() => (ctx ? paceZones(ctx) : null), [ctx]);
 
@@ -59,9 +63,57 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const lastIdx = useRef(i);
   useEffect(() => {
     if (!started) return;
-    if (idx === -1) { vibrate([250, 120, 250, 120, 250]); finish(segments.length); return; }
-    if (idx !== lastIdx.current) { vibrate([250, 120, 250]); lastIdx.current = idx; }
-  }, [idx, started, finish, segments.length]);
+    if (idx === -1) {
+      vibrate([250, 120, 250, 120, 250]);
+      if (voiceOn) speak(`Passet är klart${gps.meters >= 50 ? `. ${(gps.meters / 1000).toFixed(1).replace('.', ',')} kilometer` : ''}. Bra jobbat!`);
+      finish(segments.length); return;
+    }
+    if (idx !== lastIdx.current) {
+      vibrate([250, 120, 250]);
+      lastIdx.current = idx;
+      if (voiceOn) announce(idx);
+    }
+  }, [idx, started, finish, segments.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ---------------- Voice cues in the headphones
+  const announce = (k: number) => {
+    const sg = segments[k];
+    if (!sg) return;
+    const z = gpsOn ? zoneFor(plan.type, sg, zones) : null;
+    beep(2, 880, 120);
+    speak(`${sg.label}, ${sayMin(sg.seconds)}.${z ? ` Sikta på ${sayPace(z[0])} till ${sayPace(z[1])} per kilometer.` : sg.effort === 'gå' ? '' : sg.effort === 'hårt' ? ' Hårt nu.' : ' Pratbart tempo.'}`);
+    zoneState.current = { status: 'unknown', since: Date.now(), said: Date.now() };
+  };
+  // Pace zone: say it when you drift out of the green (and stay out ~20 s), and confirm now and then when you are in it.
+  const zoneState = useRef<{ status: string; since: number; said: number }>({ status: 'unknown', since: 0, said: 0 });
+  const zone = seg && gpsOn ? zoneFor(plan.type, seg, zones) : null;
+  useEffect(() => {
+    if (!voiceOn || !started || paused || !zone || gps.pace === null) return;
+    const x = zonePosition(gps.pace, zone);
+    const z = zoneState.current;
+    const status = Math.abs(x) <= 1 ? 'green' : x < -1.3 ? 'fast' : x > 1.3 ? 'slow' : z.status;
+    const now = Date.now();
+    if (status !== z.status) { z.status = status; z.since = now; return; }
+    const held = now - z.since, quiet = now - z.said;
+    if (status === 'fast' && held > 20000 && quiet > 45000) { z.said = now; speak(`Lite för fort. Sakta ner till ${sayPace(zone[1])}.`); }
+    else if (status === 'slow' && held > 20000 && quiet > 45000) { z.said = now; speak(`Lite för lugnt. Öka mot ${sayPace(zone[0])}.`); }
+    else if (status === 'green' && held > 20000 && quiet > 180000) { z.said = now; speak('Bra tempo, du ligger i det gröna.'); }
+  }, [gps.pace, voiceOn, started, paused, zone?.[0], zone?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Every kilometre: distance and the time for the last one.
+  const kmMark = useRef<{ km: number; at: number }>({ km: Math.floor(gps.meters / 1000), at: Date.now() });
+  useEffect(() => {
+    const k = Math.floor(gps.meters / 1000);
+    if (!started || k <= kmMark.current.km) return;
+    const split = (Date.now() - kmMark.current.at) / 1000;
+    kmMark.current = { km: k, at: Date.now() };
+    if (voiceOn) { beep(1, 988, 160); speak(`${k} kilometer. Senaste kilometern ${sayPace(split)}.`); }
+  }, [gps.meters, started, voiceOn]);
+  // Ten seconds left of a hard interval.
+  const tenLeft = useRef(-1);
+  useEffect(() => {
+    if (!voiceOn || !started || paused || !seg || seg.effort !== 'hårt' || seg.seconds < 60) return;
+    if (left <= 10 && left > 8 && tenLeft.current !== i) { tenLeft.current = i; speak('Tio sekunder kvar.'); }
+  }, [left, voiceOn, started, paused, seg, i]);
 
   const p = Math.round((Math.min(elapsed, total) / Math.max(1, total)) * 200) / 200;
   useEffect(() => onProgress(p), [p, onProgress]);
@@ -100,7 +152,10 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
       const { LocalNotifications } = await import('@capacitor/local-notifications');
       await LocalNotifications.requestPermissions().catch(() => {});
     }
+    unlockAudio();
     setClock({ ...EMPTY, startedAt: Date.now() });
+    kmMark.current = { km: 0, at: Date.now() };
+    if (voiceOn) setTimeout(() => announce(0), 300);
   };
   const pause = () => setClock({ ...clock, pausedAt: Date.now() });
   const resume = () => setClock({ ...clock, pausedAt: null, pausedMs: clock.pausedMs + (Date.now() - (clock.pausedAt ?? Date.now())) });
@@ -108,6 +163,7 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
     if (i + 1 >= segments.length) { finish(segments.length); return; }
     setClock({ ...clock, skipMs: clock.skipMs + (ends[i] - elapsed) });
   };
+  const toggleVoice = () => { const v = !voiceOn; setVoiceOn(v); try { localStorage.setItem('pelare.voice', v ? '1' : '0'); } catch { /* ignore */ } if (v) speak('Rösten är på.'); };
   const toggleGps = () => { const v = !gpsOn; setGpsOn(v); try { localStorage.setItem('pelare.gps', v ? '1' : '0'); } catch { /* ignore */ } };
   const end = useHold(() => finish(i), started);
 
@@ -146,6 +202,10 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
           <button onClick={toggleGps} aria-pressed={gpsOn} className="mb-3 flex min-h-[48px] items-center justify-between rounded-2xl px-4 text-left text-[15px]" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>
             <span className="flex items-center gap-2"><MapPin size={18} aria-hidden="true" /> Mät distans med GPS</span>
             <span className="font-semibold">{gpsOn ? 'På' : 'Av'}</span>
+          </button>
+          <button onClick={toggleVoice} aria-pressed={voiceOn} className="mb-3 flex min-h-[48px] items-center justify-between rounded-2xl px-4 text-left text-[15px]" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>
+            <span className="flex items-center gap-2"><Volume2 size={18} aria-hidden="true" /> Röst i hörlurarna</span>
+            <span className="font-semibold">{voiceOn ? 'På' : 'Av'}</span>
           </button>
           <OnButton onClick={start}><Play size={22} /> Starta</OnButton>
         </>
