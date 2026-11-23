@@ -8,6 +8,7 @@ import { useCountdown } from '../../shared/ui/hooks';
 import { Figure } from '../../shared/ui/Figure';
 import { Ring, Sheet } from '../../shared/ui/kit';
 import { HOWTO } from './howto';
+import { TechniqueVideos } from '../../shared/ui/TechniqueVideos';
 import { useCtx } from '../../core/ctx';
 import { EX, MUSCLE_NAME } from './exercises';
 import { equipmentAt, similar, swapItem } from './planner';
@@ -256,6 +257,7 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
               <li key={i} className="flex gap-4 border-t border-rule py-3 text-[16px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{i + 1}</span><span>{t}</span></li>
             ))}
           </ol>
+          <TechniqueVideos exercise={it.id} name={it.name} />
         </div>
       </Sheet>
     </div>

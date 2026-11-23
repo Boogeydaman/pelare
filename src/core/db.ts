@@ -5,6 +5,9 @@ import type { CheckIn, LogData, LogModule, PlannedSession, Profile, SessionLog, 
 
 interface KV { key: string; value: unknown }
 
+/** Your own technique video for an exercise. Stored only in the phone, never in the JSON backup. */
+export interface TechniqueVideo { id: string; exercise: string; date: string; blob: Blob; type: string; size: number }
+
 /** The session that is running right now, so a reload does not lose it. */
 export interface ActiveSession { plan: PlannedSession; startedAt: number; from: string; result?: LogData; finishedAt?: number }
 
@@ -13,6 +16,7 @@ class PelareDB extends Dexie {
   sessions!: Table<SessionLog, string>;
   tests!: Table<TestResult, string>;
   checkins!: Table<CheckIn, string>;
+  videos!: Table<TechniqueVideo, string>;
 
   constructor() {
     super('pelare');
@@ -22,6 +26,7 @@ class PelareDB extends Dexie {
       tests: 'id, module, testId, date',
       checkins: 'date',
     });
+    this.version(2).stores({ videos: 'id, exercise, date' });
   }
 }
 
@@ -67,6 +72,9 @@ export const useCheckin = (date: string) => useLiveQuery(async () => (await db.c
 // ---------- Writes ----------
 
 export const saveProfile = (p: Profile) => setKV('profile', p);
+export const useVideos = (exercise: string) => useLiveQuery(async () => (await db.videos.where('exercise').equals(exercise).toArray()).sort((a, b) => b.date.localeCompare(a.date)), [exercise]);
+export const saveVideo = (v: TechniqueVideo) => db.videos.put(v);
+export const deleteVideo = (id: string) => db.videos.delete(id);
 // Your own gym exercises (kept as plain data so that the core does not depend on the gym module).
 export const useCustomExercises = <T = import('../modules/gym/custom').CustomExercise>() => useLiveQuery(async () => (await getKV<T[]>('customExercises')) ?? [], []);
 export const saveCustomExercises = (list: unknown[]) => setKV('customExercises', list);
@@ -82,7 +90,7 @@ export async function removeSampleData() {
 }
 
 export async function resetAll() {
-  await Promise.all([db.kv.clear(), db.sessions.clear(), db.tests.clear(), db.checkins.clear()]);
+  await Promise.all([db.kv.clear(), db.sessions.clear(), db.tests.clear(), db.checkins.clear(), db.videos.clear()]);
   try { ['pelare.gymplayer', 'pelare.installHidden'].forEach((k) => localStorage.removeItem(k)); } catch { /* ignore */ }
 }
 

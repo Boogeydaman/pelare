@@ -8,6 +8,7 @@ import type { SessionLog } from '../../core/types';
 import type { TestDef, TrainingModule } from '../../modules/types';
 import { Empty, Page, Row, Section, Stat } from '../../shared/layout/page';
 import { Figure } from '../../shared/ui/Figure';
+import { TechniqueVideos } from '../../shared/ui/TechniqueVideos';
 import { Field, NumberInput, parseNum } from '../../shared/ui/fields';
 import { Primary, Sheet, color } from '../../shared/ui/kit';
 import { gymDaysOf, runsPerWeekOf } from '../../modules/common';
@@ -196,6 +197,7 @@ export function LibraryDetail({ m }: { m: TrainingModule }) {
           ))}
         </ol>
       </Section>
+      {(m.id === 'gym' || m.id === 'mobility') && <TechniqueVideos exercise={item.id} name={item.name} />}
       {item.how && item.tips.length > 0 && (
         <Section title="Tänk på">
           <ul>

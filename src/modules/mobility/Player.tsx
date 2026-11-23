@@ -7,6 +7,7 @@ import { useCountdown } from '../../shared/ui/hooks';
 import { Figure } from '../../shared/ui/Figure';
 import { Ring, Sheet } from '../../shared/ui/kit';
 import { STRETCH_HOW } from './howto';
+import { TechniqueVideos } from '../../shared/ui/TechniqueVideos';
 import { STRETCH_ANIM } from './stretches';
 import type { PlayerProps } from '../types';
 
@@ -71,6 +72,7 @@ export function MobilityPlayer({ plan, onProgress, onFinish }: PlayerProps) {
               <li key={i} className="flex gap-4 border-t border-rule py-3 text-[16px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{i + 1}</span><span>{t}</span></li>
             ))}
           </ol>
+          <TechniqueVideos exercise={cur.id} name={cur.name} />
         </div>
       </Sheet>
 

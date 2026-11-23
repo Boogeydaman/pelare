@@ -1,19 +1,29 @@
+import { ChevronDown } from 'lucide-react';
+import { useState } from 'react';
 import { fmtClock, fmtNum } from '../../core/format';
+import { ExerciseHow } from '../ui/ExerciseHow';
 import type { Content, LogData, PlannedSession } from '../../core/types';
 import { MODULE_NAME } from '../ui/kit';
 
 /** What a planned session contains – exercises, segments or stretches. */
 export function ContentList({ content }: { content: Content }) {
+  // Tap an exercise to see how it is done, without leaving the list.
+  const [open, setOpen] = useState<number | null>(null);
+  const row = (k: number, left: React.ReactNode, right: React.ReactNode, how: React.ReactNode) => (
+    <li key={k} className="border-t border-rule">
+      <button onClick={() => setOpen(open === k ? null : k)} aria-expanded={open === k} className="flex w-full items-center justify-between gap-4 py-4 text-left">
+        <span className="flex items-baseline gap-4">{left}</span>
+        <span className="flex shrink-0 items-center gap-2">{right}<ChevronDown size={16} className={`text-ink2 transition ${open === k ? 'rotate-180' : ''}`} aria-hidden="true" /></span>
+      </button>
+      {open === k && how}
+    </li>
+  );
   return (
     <ol>
-      {content.kind === 'strength' && content.items.map((it, i) => (
-        <li key={it.id + i} className="flex items-baseline justify-between gap-4 border-t border-rule py-4">
-          <span className="flex items-baseline gap-4">
-            <span className="num w-5 text-[14px] text-ink2">{i + 1}</span>
-            <span className="text-[17px] font-medium">{it.name}</span>
-          </span>
-          <span className="num shrink-0 text-[15px] text-ink2">{it.sets} × {it.reps[0]}–{it.reps[1]}</span>
-        </li>
+      {content.kind === 'strength' && content.items.map((it, i) => row(i,
+        <><span className="num w-5 text-[14px] text-ink2">{i + 1}</span><span className="text-[17px] font-medium">{it.name}</span></>,
+        <span className="num text-[15px] text-ink2">{it.sets} × {it.reps[0]}{it.reps[1] !== it.reps[0] ? `–${it.reps[1]}` : ''}{it.unit === 'sek' ? ' s' : ''}</span>,
+        <ExerciseHow module="gym" id={it.id} name={it.name} compact />,
       ))}
       {content.kind === 'run' && content.segments.map((s, i) => (
         <li key={i} className="flex items-baseline justify-between gap-4 border-t border-rule py-3">
@@ -21,11 +31,10 @@ export function ContentList({ content }: { content: Content }) {
           <span className="num text-[15px] text-ink2">{fmtClock(s.seconds)}</span>
         </li>
       ))}
-      {content.kind === 'mobility' && content.holds.map((h) => (
-        <li key={h.id} className="flex items-baseline justify-between gap-4 border-t border-rule py-4">
-          <span className="text-[17px] font-medium">{h.name}</span>
-          <span className="num shrink-0 text-[15px] text-ink2">{h.rounds > 1 ? `${h.rounds} × ` : ''}{h.seconds} s{h.sides === 2 ? ' / sida' : ''}</span>
-        </li>
+      {content.kind === 'mobility' && content.holds.map((h, i) => row(i,
+        <span className="text-[17px] font-medium">{h.name}</span>,
+        <span className="num text-[15px] text-ink2">{h.rounds > 1 ? `${h.rounds} × ` : ''}{h.seconds} s{h.sides === 2 ? ' / sida' : ''}</span>,
+        <ExerciseHow module="mobility" id={h.id} name={h.name} compact />,
       ))}
       {content.kind === 'rest' && <li className="border-t border-rule py-4 text-[17px]">{content.text}</li>}
     </ol>
