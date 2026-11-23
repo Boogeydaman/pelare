@@ -204,6 +204,22 @@ describe('På resa och veckans fördelning', () => {
   });
 });
 
+describe('Uppvärmning', () => {
+  it('rampset före första tunga lyftet: 50 %, 70 % och 85 %, och färre före nästa', () => {
+    const logs = [log(48, [['squat', 100, [8, 8, 8]], ['incline_bench', 60, [8, 8, 8]]])];
+    const p = build(ctx({ logs }), PROGRAMS[0].sessions[0]);
+    if (p.content.kind !== 'strength') throw new Error();
+    const sq = p.content.items.find((i) => i.id === 'squat')!;
+    expect(sq.warmup?.map((w) => w.reps)).toEqual([8, 4, 2]);
+    expect(sq.warmup?.[0].kg).toBe(50);
+    expect(sq.warmup!.every((w) => w.kg < sq.kg!)).toBe(true);
+    const bench = p.content.items.find((i) => i.id === 'incline_bench')!;
+    expect(bench.warmup?.length).toBe(2);
+    const later = p.content.items.slice(2);
+    expect(later.every((i) => !i.warmup)).toBe(true);
+  });
+});
+
 describe('Rullande program', () => {
   it('blandar alla pass, upprepar inte samma pass i rad och undviker trötta muskler', () => {
     const prog = PROGRAM_BY_ID.rolling;

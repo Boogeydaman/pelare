@@ -209,6 +209,21 @@ export function build(ctx: ModuleCtx, tpl: SessionTemplate, opts: { minutes?: nu
     progress.splice(0, progress.length, `${gymGap} dagar sedan senaste gympasset: 10 % lättare och ett set färre i dag, så att kroppen hinner vänja sig igen.`);
   }
 
+  // Warm-up ramp before the heavy lifts (SPEC 7.6): the first loaded compound lift gets 50 % × 8,
+  // 70 % × 4 and 85 % × 2; the next one, if it trains other muscles, two shorter sets.
+  let ramps = 0;
+  const warmed = new Set<string>();
+  for (const it of items) {
+    if (ramps >= 2 || !it.kg || it.kg < 30 || it.bodyweight || !EX[it.id]?.compound) continue;
+    const muscles = EX[it.id].primary;
+    if (ramps === 1 && muscles.every((m) => warmed.has(m))) continue;
+    const plan = ramps === 0 ? [[0.5, 8], [0.7, 4], [0.85, 2]] : [[0.6, 5], [0.8, 2]];
+    it.warmup = plan.map(([pct, reps]) => ({ kg: Math.max(it.step, round(it.kg! * pct, it.step)), reps }))
+      .filter((w, k, arr) => w.kg < it.kg! && (k === 0 || w.kg > arr[k - 1].kg));
+    muscles.forEach((m) => warmed.add(m));
+    ramps++;
+  }
+
   // Fit the time: trim sets on the last exercises, then drop exercises (keep at least 3).
   const limit = opts.minutes ?? ctx.checkin.minutes;
   let guard = 0;

@@ -12,7 +12,7 @@ import { EX, MUSCLE_NAME } from './exercises';
 import { equipmentAt, similar, swapItem } from './planner';
 import type { PlayerProps } from '../types';
 
-interface Saved { ex: number; set: number; phase: 'work' | 'feel'; kg: number; reps: number; results: ExerciseResult[]; swaps?: Record<number, string> }
+interface Saved { ex: number; set: number; phase: 'work' | 'feel'; kg: number; reps: number; results: ExerciseResult[]; swaps?: Record<number, string>; warm?: Record<string, boolean> }
 const KEY = 'pelare.gymplayer';
 
 function restore(storageKey: string): Saved | null {
@@ -26,6 +26,8 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
   const ctx = useCtx();
   const saved = useMemo(() => restore(storageKey), [storageKey]);
   const [swaps, setSwaps] = useState<Record<number, string>>(saved?.swaps ?? {});
+  // Ticked warm-up sets, keyed "exercise:set" (and "exercise:done" when the warm-up is finished).
+  const [warm, setWarm] = useState<Record<string, boolean>>(saved?.warm ?? {});
   // Exercises swapped during the session get their own target from the history.
   const items: StrengthItem[] = useMemo(() => {
     const base = plan.content.kind === 'strength' ? plan.content.items : [];
@@ -40,8 +42,8 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
 
   // Save after every change so a locked phone or reload does not lose the session.
   useEffect(() => {
-    try { localStorage.setItem(KEY, JSON.stringify({ key: storageKey, state: { ex, set, phase: phase === 'rest' ? 'work' : phase, kg, reps, results, swaps } })); } catch { /* ignore */ }
-  }, [storageKey, ex, set, phase, kg, reps, results, swaps]);
+    try { localStorage.setItem(KEY, JSON.stringify({ key: storageKey, state: { ex, set, phase: phase === 'rest' ? 'work' : phase, kg, reps, results, swaps, warm } })); } catch { /* ignore */ }
+  }, [storageKey, ex, set, phase, kg, reps, results, swaps, warm]);
   const onFinish: typeof finishOuter = (data) => { try { localStorage.removeItem(KEY); } catch { /* ignore */ } finishOuter(data); };
   const [help, setHelp] = useState(false);
   const [swapOpen, setSwapOpen] = useState(false);
@@ -149,6 +151,31 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
           <ListOrdered size={16} aria-hidden="true" /> Kommande ({items.length - ex - 1})
         </button>
       </div>
+      {set === 0 && it.warmup && it.warmup.length > 0 && !warm[`${ex}:done`] && (
+        <div className="mt-3 rounded-2xl px-4 py-3" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>
+          <div className="flex items-baseline justify-between">
+            <span className="text-[15px] font-semibold">Uppvärmning först</span>
+            <span className="text-[12px]" style={{ color: ON_DIM }}>~1 min vila mellan</span>
+          </div>
+          <div className="mt-2 flex gap-2">
+            {it.warmup.map((w, k) => {
+              const on = !!warm[`${ex}:${k}`];
+              return (
+                <button key={k} aria-pressed={on} onClick={() => setWarm((x) => {
+                  const next = { ...x, [`${ex}:${k}`]: !on };
+                  if (it.warmup!.every((_, j) => next[`${ex}:${j}`])) next[`${ex}:done`] = true;
+                  return next;
+                })}
+                  className="num flex h-12 flex-1 items-center justify-center gap-1.5 rounded-xl text-[15px] font-semibold"
+                  style={on ? { background: ON, color: 'rgb(var(--ink))' } : { border: '1.5px solid rgb(var(--onpillar) / 0.45)' }}>
+                  {on && <Check size={15} aria-hidden="true" />}{fmtNum(w.kg)} × {w.reps}
+                </button>
+              );
+            })}
+          </div>
+          <button onClick={() => setWarm((x) => ({ ...x, [`${ex}:done`]: true }))} className="mt-2 min-h-[36px] text-[13px] underline underline-offset-4" style={{ color: ON_DIM }}>Hoppa över uppvärmningen</button>
+        </div>
+      )}
       {(it.last || it.aim) && (
         <div className="num mt-2 grid grid-cols-2 gap-3 rounded-2xl px-4 py-3 text-[14px]" style={{ background: 'rgb(var(--onpillar) / 0.12)' }}>
           <div><div style={{ color: ON_DIM }}>Förra gången</div><div className="font-semibold">{it.last?.replace(/^[^·]*· /, '') ?? '–'}</div></div>
