@@ -1,6 +1,6 @@
 // How to perform each gym exercise: figure animation + three steps (start, movement, common mistake).
 
-export interface HowTo { anim: string; how: [string, string, string] }
+export interface HowTo { anim: string; how: string[] }
 
 export const HOWTO: Record<string, HowTo> = {
   // Ben

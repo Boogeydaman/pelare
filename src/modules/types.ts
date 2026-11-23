@@ -74,6 +74,10 @@ export interface TrainingModule {
   /** Optional extra content on Framsteg (e.g. list of exercises) and on a library item (e.g. its history). */
   ProgressExtra?: FC;
   LibraryExtra?: FC<{ id: string }>;
+  /** Optional actions at the top of the library (e.g. add your own exercise). */
+  LibraryActions?: FC;
+  /** Optional second view on the module page (gym: training diary). */
+  Diary?: { label: string; Component: FC };
   /** Records a new log sets, compared with everything before it. */
   records?(prev: SessionLog[], log: SessionLog): RecordItem[];
 }

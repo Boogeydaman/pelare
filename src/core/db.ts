@@ -67,6 +67,9 @@ export const useCheckin = (date: string) => useLiveQuery(async () => (await db.c
 // ---------- Writes ----------
 
 export const saveProfile = (p: Profile) => setKV('profile', p);
+// Your own gym exercises (kept as plain data so that the core does not depend on the gym module).
+export const useCustomExercises = <T = import('../modules/gym/custom').CustomExercise>() => useLiveQuery(async () => (await getKV<T[]>('customExercises')) ?? [], []);
+export const saveCustomExercises = (list: unknown[]) => setKV('customExercises', list);
 export const setActive = (a: ActiveSession | null) => (a ? setKV('active', a) : db.kv.delete('active'));
 export const saveSession = (s: SessionLog) => db.sessions.put(s);
 export const deleteSession = (id: string) => db.sessions.delete(id);
@@ -87,6 +90,7 @@ export async function exportAll() {
   const data = {
     version: 1,
     profile: await getKV<Profile>('profile'),
+    customExercises: (await getKV<unknown[]>('customExercises')) ?? [],
     sessions: await db.sessions.toArray(),
     tests: await db.tests.toArray(),
     checkins: await db.checkins.toArray(),
@@ -116,6 +120,7 @@ export async function importAll(file: File): Promise<boolean> {
     if (!Array.isArray(d.sessions)) return false;
     await resetAll();
     if (d.profile) await saveProfile(d.profile);
+    if (Array.isArray(d.customExercises)) await saveCustomExercises(d.customExercises);
     await db.sessions.bulkPut(d.sessions);
     await db.tests.bulkPut(d.tests ?? []);
     await db.checkins.bulkPut(d.checkins ?? []);

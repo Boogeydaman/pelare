@@ -12,6 +12,7 @@ import { MODULE_LIST } from '../modules/registry';
 import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
 import { InstallCard } from '../shared/ui/InstallCard';
+import { WrappedCard } from './Wrapped';
 import { Row } from '../shared/layout/page';
 import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -58,6 +59,7 @@ export function Today() {
         <span className="text-[15px] text-ink2">Ändra</span>
       </button>
 
+      <WrappedCard />
       <SampleBanner />
       <div className="mt-4 empty:hidden"><InstallCard /></div>
 

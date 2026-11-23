@@ -93,4 +93,21 @@ describe('Din vecka', () => {
     expect(p.tone).toBe('paused');
     expect(mains(p)).toHaveLength(0);
   });
+
+  it('löpning blir aldrig tre dagar i rad, och inte dagen efter ett löppass när veckan ryms ändå', () => {
+    const base = profile({ gymDays: 2 });
+    const two = [log('run', '2026-11-18T10:00:00'), log('run', '2026-11-19T10:00:00')];
+    const v3 = coach(ctx(at('2026-11-20T08:00:00'), two, base), MODULE_LIST);
+    expect(v3.primary.module).not.toBe('run');
+    expect([v3.primary, ...v3.alternatives].some((x) => x.module === 'run')).toBe(false);
+    const one = [log('run', '2026-11-16T10:00:00')];
+    const v2 = coach(ctx(at('2026-11-17T08:00:00'), one, base), MODULE_LIST);
+    expect(v2.primary.module).not.toBe('run');
+  });
+
+  it('veckoplanen lägger inte löppass på dagar i rad när det går att undvika', () => {
+    const p = plan(ctx(at('2026-11-16T08:00:00'), [], profile({ gymDays: 2 })));
+    const runDays = p.days.filter((d) => d.planned.includes('run')).map((d) => d.index);
+    for (let k = 1; k < runDays.length; k++) expect(runDays[k] - runDays[k - 1], runDays.join(',')).toBeGreaterThan(1);
+  });
 });

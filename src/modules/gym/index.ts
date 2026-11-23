@@ -9,6 +9,9 @@ import { PROGRAMS, PROGRAM_BY_ID } from './programs';
 import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } from './planner';
 import { HOWTO } from './howto';
 import { GymPlayer } from './Player';
+import { GymDiary, GymProgramExtra } from './diary';
+import { GymLibraryActions, isCustom } from './custom';
+import { Link } from 'react-router-dom';
 import { ExerciseProgress, GymExerciseList, gymRecords } from './progress';
 
 const NEED_NAME: Record<Need, string> = {
@@ -53,6 +56,12 @@ function LogForm({ onSave }: LogFormProps) {
     types: [{ value: 'strength', label: 'Styrka' }, { value: 'bodyweight', label: 'Kroppsvikt' }, { value: 'circuit', label: 'Cirkel' }, { value: 'other', label: 'Annat' }],
     onSave: (v) => onSave({ type: v.type, title: v.title, minutes: v.minutes, feel: v.feel }),
   });
+}
+
+function GymLibraryExtra({ id }: { id: string }) {
+  return createElement('div', null,
+    isCustom(id) ? createElement(Link, { to: `/gym/egen-ovning/${id}`, className: 'mt-6 flex min-h-[48px] items-center justify-center rounded-full border border-rule text-[15px] font-medium' }, 'Ändra din övning') : null,
+    createElement(ExerciseProgress, { id }));
 }
 
 export const gym: TrainingModule = {
@@ -118,7 +127,8 @@ export const gym: TrainingModule = {
     ];
   },
 
-  library: { title: 'Övningar', groups: GROUPS, items: EXERCISES.map(libraryItem) },
+  // A getter: your own exercises are added to EXERCISES at runtime.
+  get library() { return { title: 'Övningar', groups: GROUPS, items: EXERCISES.map(libraryItem) }; },
   describe: (l) => (l.data?.kind === 'strength' ? `${l.data.exercises.length} övningar · ${l.data.exercises.reduce((a, e) => a + e.sets.length, 0)} set` : `${l.minutes} min`),
   load(l) {
     if (l.data?.kind !== 'strength') return { hard: true };
@@ -129,6 +139,9 @@ export const gym: TrainingModule = {
   Player: GymPlayer,
   LogForm,
   ProgressExtra: GymExerciseList,
-  LibraryExtra: ExerciseProgress,
+  LibraryExtra: GymLibraryExtra,
+  LibraryActions: GymLibraryActions,
+  Diary: { label: 'Dagbok', Component: GymDiary },
+  ProgramExtra: GymProgramExtra,
   records: gymRecords,
 };

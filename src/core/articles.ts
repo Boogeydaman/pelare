@@ -134,6 +134,12 @@ export const ARTICLES: Article[] = [
       { h: 'Ett hårt pass räcker', p: [
         'Ett intervallpass i veckan, till exempel 4 × 4 minuter nära maxpuls, höjer syreupptagningen mer än lika mycket måttlig löpning [18]. Nybörjare börjar med kortare intervaller.',
       ] },
+      { h: 'Vilodag mellan löppassen', p: [
+        'Hjärta och lungor anpassar sig snabbt, men senor, ben och brosk tar veckor till månader. Därför föreslår Pelare aldrig löpning tre dagar i rad, och dagen efter ett löppass blir det något annat om veckan ryms ändå. Det är dagarna utan löpning som gör dig tålig för nästa pass.',
+      ] },
+      { h: 'Rätt tempo', p: [
+        'Ditt tempo räknas från ett 5 km-test eller dina GPS-rundor: lugna pass klart långsammare än tävlingsfart, tempopass strax långsammare och intervaller runt 5 km-fart – samma upplägg som de vanliga tempotabellerna för löpare. Mätaren på löpskärmen visar grönt när du ligger rätt.',
+      ] },
       { h: 'Öka försiktigt', p: [
         'Det enskilda pass som sticker ut är farligast. Mer än 10 % längre än ditt längsta pass senaste månaden ökar skaderisken [19], så långpasset växer i små steg.',
       ] },

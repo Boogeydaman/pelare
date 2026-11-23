@@ -39,17 +39,6 @@ export function spread<T>(pool: T[], n: number): T[] {
   return Array.from({ length: n }, (_, k) => pool[Math.min(pool.length - 1, Math.floor(((k + 0.5) * pool.length) / n))]);
 }
 
-/** Orders the remaining sessions so the same kind doesn't land on two days in a row when avoidable. */
-function order(left: Record<MainId, number>, last: MainId | undefined): MainId[] {
-  const out: MainId[] = [];
-  const l = { ...left };
-  let prev = last;
-  while (l.gym + l.run > 0) {
-    const next: MainId = l.gym === 0 ? 'run' : l.run === 0 ? 'gym' : l.gym > l.run ? 'gym' : l.run > l.gym ? 'run' : prev === 'gym' ? 'run' : 'gym';
-    out.push(next); l[next]--; prev = next;
-  }
-  return out;
-}
 
 export function planWeek(ctx: ModuleCtx, modules: TrainingModule[], view: TodayView): WeekPlan {
   const { now, logs, profile } = ctx;
@@ -85,9 +74,18 @@ export function planWeek(ctx: ModuleCtx, modules: TrainingModule[], view: TodayV
   const useFixed = fixedDays.length > 0 && preferred.length >= n;
   const pool = useFixed ? preferred : future;
   const slots = sick ? [] : spread(pool, n);
-  const lastMain = todayDay.planned[0] ?? ([...days.slice(0, t + 1)].reverse().flatMap((d) => d.done).find((m) => m === 'gym' || m === 'run') as MainId | undefined);
-  const seq = order(left, lastMain);
-  slots.forEach((d, i) => { d.planned = [seq[i]]; });
+  // Assign gym and running to the chosen days so that runs never fall on consecutive days when it can
+  // be avoided (rest day between runs), alternating with gym otherwise.
+  const runOn = (k: number) => k >= 0 && k < 7 && (days[k].planned.includes('run') || days[k].done.includes('run'));
+  const l2 = { ...left };
+  slots.forEach((d, i) => {
+    const remaining = slots.length - i;
+    const canRun = l2.run > 0 && !runOn(d.index - 1);
+    const mustRun = l2.run >= remaining;
+    const pickRun = l2.run > 0 && (mustRun || (canRun && (l2.gym === 0 || l2.run >= l2.gym || days[d.index - 1]?.planned.includes('gym'))));
+    const m: MainId = pickRun ? 'run' : l2.gym > 0 ? 'gym' : 'run';
+    d.planned = [m]; l2[m]--;
+  });
   const overflow = sick ? 0 : n - slots.length;
 
   // Mobility: short sessions, rest days first, then alongside the other sessions.

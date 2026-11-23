@@ -74,7 +74,24 @@ export function currentVariant(base: Exercise, logs: SessionLog[]): Exercise {
 const failed = (r: ExerciseResult, lo: number) => r.feel === 3 || r.sets.some((s) => s.reps < lo);
 const round = (v: number, step: number) => Math.max(step, Math.round(v / step) * step);
 
-export interface Target { ex: Exercise; kg: number | null; reps: number; note?: string; progressed?: boolean }
+export interface Target { ex: Exercise; kg: number | null; reps: number; note?: string; progressed?: boolean; plateau?: string }
+
+/** Estimated one-rep max (Epley). */
+export const e1rm = (kg: number, reps: number) => (reps <= 1 ? kg : kg * (1 + reps / 30));
+const bestE1rm = (r: ExerciseResult) => Math.max(0, ...r.sets.map((s) => e1rm(s.kg, s.reps)));
+
+/**
+ * Plateau: the last three sessions with no progress in estimated max. Tips follow common practice for
+ * breaking plateaus: a short deload, a rep-range change or a similar exercise for a while (H).
+ */
+export function plateauTip(hist: Done[], ex: Exercise): string | undefined {
+  if (hist.length < 3 || ex.step === 0) return undefined;
+  const [a, b, c] = hist.slice(0, 3).map((h) => bestE1rm(h.result));
+  if (!a || a > Math.max(b, c) * 1.01) return undefined;
+  const kg = Math.max(...hist[0].result.sets.map((s) => s.kg));
+  const alt = ex.alt?.[0] && EX[ex.alt[0]] ? EX[ex.alt[0]].name.toLowerCase() : null;
+  return `Platå: samma nivå tre pass i rad. Prova ett av: sänk till ${fmtKg(round(kg * 0.9, ex.step))} kg och bygg upp igen i två veckor, byt till 3–5 reps tyngre ett tag${alt ? `, eller kör ${alt} i några veckor` : ''}. Sov och ät tillräckligt – det är ofta där det sitter.`;
+}
 
 /** Double progression for loaded exercises; ladder steps for bodyweight. */
 export function target(base: Exercise, logs: SessionLog[], range?: [number, number]): Target {
@@ -97,6 +114,7 @@ export function target(base: Exercise, logs: SessionLog[], range?: [number, numb
   }
 
   const last = hist[0].result;
+  const plateau = plateauTip(hist, ex);
   const kg = Math.max(...last.sets.map((s) => s.kg));
   const minReps = Math.min(...last.sets.map((s) => s.reps));
   const allTop = last.sets.every((s) => s.reps >= hi) && last.feel !== 3;
@@ -114,8 +132,8 @@ export function target(base: Exercise, logs: SessionLog[], range?: [number, numb
   if (failed(last, lo) && hist[1] && failed(hist[1].result, lo) && ex.step > 0 && kg > 0) {
     return { ex, kg: round(kg * (1 - DROP_PCT), ex.step), reps: lo, note: 'Två tunga pass i rad – vikten sänks lite så att du kan bygga upp igen.' };
   }
-  if (failed(last, lo)) return { ex, kg, reps: Math.max(lo, minReps), note: 'Samma vikt som förra gången.' };
-  return { ex, kg, reps: Math.min(hi, minReps + 1), note: `Sikta på ${Math.min(hi, minReps + 1)} reps.` };
+  if (failed(last, lo)) return { ex, kg, reps: Math.max(lo, minReps), note: 'Samma vikt som förra gången.', plateau };
+  return { ex, kg, reps: Math.min(hi, minReps + 1), note: `Sikta på ${Math.min(hi, minReps + 1)} reps.`, plateau };
 }
 
 // ---------------------------------------------------------------- Volume and recovery
@@ -240,10 +258,32 @@ function toItem(t: Target, slot: Slot, last?: Done): StrengthItem {
   return {
     id: t.ex.id, name: t.ex.name, sets: slot.sets, reps: range, kg: t.kg, step: t.ex.step || 2.5,
     restSec: slot.rest ?? t.ex.rest, cue: t.ex.cue, bodyweight, unit: slot.unit ?? t.ex.unit,
-    note: [slot.note, t.note].filter(Boolean).join(' '),
+    // "Sikta på …" / "Samma vikt …" are shown in the aim box instead.
+    note: [slot.note, last && t.note && /^(Sikta på|Samma vikt)/.test(t.note) ? undefined : t.note].filter(Boolean).join(' '),
     target: t.reps,
     last: lastText(last),
+    aim: last ? (t.kg ? `${fmtKg(t.kg)} kg × ${t.reps}${range[1] > t.reps ? `–${range[1]}` : ''}` : `${t.reps}${range[1] > t.reps ? `–${range[1]}` : ''} ${(slot.unit ?? t.ex.unit) === 'sek' ? 's' : 'reps'}`) : undefined,
+    plateau: t.plateau,
   };
+}
+
+/** Swap an exercise in a running session for another one, with its own target from the history. */
+export function swapItem(item: StrengthItem, id: string, logs: SessionLog[]): StrengthItem | null {
+  const ex = EX[id];
+  if (!ex) return null;
+  const t = target(ex, logs);
+  return toItem(t, { ex: id, sets: item.sets }, history(logs, t.ex.id)[0]);
+}
+
+/** Similar exercises for a swap: same main muscle, usable with today's equipment, most overlap first. */
+export function similar(id: string, eq: Set<Need>): Exercise[] {
+  const ex = EX[id];
+  if (!ex) return [];
+  const main = new Set(ex.primary);
+  const can = (e: Exercise) => e.needs.every((n) => eq.has(n));
+  const score = (e: Exercise) => e.primary.filter((m) => main.has(m)).length * 3 + e.secondary.filter((m) => main.has(m)).length + (ex.alt?.includes(e.id) ? 4 : 0) + (e.compound === ex.compound ? 1 : 0) + (e.needs.length && eq.has('barbell') ? 2 : 0);
+  return Object.values(EX).filter((e) => e.id !== id && can(e) && e.primary.some((m) => main.has(m)))
+    .sort((a, b) => score(b) - score(a)).slice(0, 8);
 }
 
 /**

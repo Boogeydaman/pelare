@@ -104,6 +104,13 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   const recentHardLegs = recent.some((l) => { const ld = modules.find((m) => m.id === l.module)?.load(l); return !!ld?.hard && (ld.legs ?? 0) >= 0.8; });
   const body = bodyFatigue(ctx, modules);
 
+  // Running on consecutive days: the tissues that take the impact (tendons, bone) adapt more slowly than
+  // heart and lungs, so a rest day between runs lowers the injury risk – above all for newer runners.
+  // Never three days in a row; the day after a run only an easy run, and only when the week needs it.
+  const ranOn = (d: number) => logs.some((l) => l.module === 'run' && isSameDay(l.startedAt, new Date(now.getTime() - d * DAY)));
+  const ranYesterday = ranOn(1);
+  const ranTwoDays = ranYesterday && ranOn(2);
+
   // Week: urgency = sessions still needed / days left (including today).
   const daysLeft = 7 - Math.floor((now.getTime() - weekStart(now).getTime()) / DAY);
   const week: WeekLine[] = modules.map((m) => { const w = m.weekly(ctx); return { module: m.id, name: m.name, done: w.done, target: w.target, unit: w.unit }; });
@@ -138,6 +145,8 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
       let blocked: string | undefined;
       if (lightOnly && hard) blocked = 'lugn dag';
       if (hard && (load.legs ?? 0) >= 0.8 && recentHardLegs) blocked = 'benen behöver 24 timmar mellan tunga ben och hård löpning';
+      if (m.id === 'run' && ranTwoDays) blocked = 'löpning tre dagar i rad';
+      else if (m.id === 'run' && ranYesterday && (hard || left < daysLeft)) blocked = 'löpning dag efter dag';
 
       const fatigue = (load.legs ?? 0) * Math.min(1, body.legs / 1.2) + (load.upper ?? 0) * Math.min(1, body.upper / 1.2);
       const fit = s.minutes <= checkin.minutes ? 0.1 : -0.4;
@@ -160,7 +169,11 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
 
   const ok = scored.filter((x) => !x.blocked).sort((a, b) => b.score - a.score);
   const blockedNotes = [...new Set(scored.filter((x) => x.blocked && x.blocked !== 'lugn dag').map((x) => x.blocked!))];
-  for (const b of blockedNotes) notes.push({ text: `Inga hårda benpass eller hårda löppass i dag: ${b}.`, source: '16' });
+  for (const b of blockedNotes) {
+    if (b === 'löpning tre dagar i rad') notes.push({ text: 'Ingen löpning i dag: du har sprungit två dagar i rad. Senor och skelett behöver en vilodag för att hinna anpassa sig – det är där löparskadorna uppstår.', source: '19' });
+    else if (b === 'löpning dag efter dag') notes.push({ text: 'Du sprang i går, så ingen löpning i dag. En vilodag mellan löppassen låter senor och skelett återhämta sig och sänker skaderisken – veckans löppass hinns ändå.', source: '19' });
+    else notes.push({ text: `Inga hårda benpass eller hårda löppass i dag: ${b}.`, source: '16' });
+  }
   if (aerobicBehind) notes.push({ text: `Du har ${aerobicMin} av 150 minuters kondition den här veckan, så löpning väger lite tyngre i dag.`, source: '25' });
 
   const primary = withCoachReason(ok[0].s, week, daysLeft);

@@ -1,4 +1,6 @@
 import { FigureSheet } from './dev/FigureSheet';
+import { CustomExercisePage } from './modules/gym/custom';
+import { WrappedPage } from './screens/Wrapped';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
 import { CtxProvider } from './core/ctx';
 import { useProfile } from './core/db';
@@ -51,9 +53,12 @@ const router = createHashRouter([
           { path: 'las', element: <ArticlesPage /> },
           { path: 'las/:id', element: <ArticlePage /> },
           ...moduleRoutes,
+          { path: 'gym/egen-ovning', element: <CustomExercisePage /> },
+          { path: 'gym/egen-ovning/:id', element: <CustomExercisePage /> },
         ],
       },
       { path: 'pass', element: <PlayerPage /> },
+      { path: 'veckan', element: <WrappedPage /> },
       { path: 'pass/klart', element: <DonePage /> },
       { path: 'installningar', element: <Settings /> },
       { path: '*', element: <Navigate to="/idag" replace /> },

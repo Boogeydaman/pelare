@@ -79,6 +79,10 @@ export function You() {
         )) : <Empty>Inga nya rekord än. De dyker upp här när du slår ditt bästa.</Empty>}
       </Section>
 
+      <Section title="Veckan i siffror">
+        <Row title="Din vecka i siffror" sub="Pass, set, km och rekord – som en kort berättelse" to="/veckan" />
+      </Section>
+
       <Section title="Kunskap">
         <Row title="Så tänker vi" sub="Filosofin bakom träningen, med källor" to="/las" />
       </Section>

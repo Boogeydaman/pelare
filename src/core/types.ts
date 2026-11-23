@@ -48,6 +48,8 @@ export interface StrengthItem {
   step: number; restSec: number; cue: string; bodyweight?: boolean;
   unit?: 'reps' | 'sek'; note?: string; target?: number; // planned reps for the first set
   last?: string; // what was done last time, e.g. "tis 17 nov · 60 kg × 8, 8, 7"
+  aim?: string; // what to aim for today, e.g. "62,5 kg × 6–8"
+  plateau?: string; // a tip when the exercise has stalled
 }
 export interface RunSegment { label: string; seconds: number; effort: 'gå' | 'lugnt' | 'hårt' | 'vila' }
 export interface HoldItem { id: string; name: string; seconds: number; sides: 1 | 2; rounds: number; cue: string }

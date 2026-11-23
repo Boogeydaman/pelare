@@ -6,6 +6,7 @@ import { fmt1, thisWeek, weeklySeries } from '../common';
 import { DISTANCE, distanceWeek, programWeek, slotsOf, type DistanceId } from './planner';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { RunPlayer } from './Player';
+import { RunStats } from './stats';
 import { HARD_TYPES, STAGES, easy, easyShare, guard, km, next, runs, stage, strides, tempo, test5k } from './planner';
 
 const PROGRAMS: ProgramOption[] = [
@@ -118,6 +119,17 @@ export const run: TrainingModule = {
         : { id: 'longest', label: 'Längsta pass, 30 dagar', value: g.assumed ? '–' : String(g.longestMin), unit: 'min', change: g.assumed ? undefined : `Nästa får vara högst ${g.maxMin} min` },
       { id: 'minutes', label: 'Löptid per vecka', value: String(minW[minW.length - 1]), unit: 'min', series: minW },
       { id: 'km', label: 'Km per vecka', value: fmt1(kmW[kmW.length - 1]), unit: 'km', series: kmW },
+      ...(() => {
+        // Average pace per week for runs with a distance (lower is faster).
+        const secW = weeklySeries(logs.filter((l) => km(l) > 0), ctx.now, 6, (l) => l.minutes * 60);
+        const kmOnly = weeklySeries(logs.filter((l) => km(l) > 0), ctx.now, 6, km);
+        const paceW = secW.map((s, i) => (kmOnly[i] ? Math.round(s / kmOnly[i]) : 0));
+        const valid = paceW.filter(Boolean);
+        if (!valid.length) return [];
+        const last = valid[valid.length - 1];
+        return [{ id: 'pace', label: 'Snittempo per vecka', value: `${Math.floor(last / 60)}:${String(last % 60).padStart(2, '0')}`, unit: 'min/km', series: valid, invert: true,
+          change: valid.length > 1 ? `${Math.abs(valid[0] - last)} s/km ${last < valid[0] ? 'snabbare' : 'långsammare'} än för ${valid.length - 1} veckor sedan` : undefined }];
+      })(),
       { id: 'share', label: 'Lugn löpning, 4 veckor', value: share === null ? '–' : String(Math.round(share * 100)), unit: '%',
         bars: share === null ? undefined : [{ label: 'Lugnt', value: Math.round(share * 100), target: 80 }, { label: 'Hårt', value: Math.round((1 - share) * 100), target: 20 }] },
       { id: '5k', label: '5 km-test', value: tests.length ? fmtMin(tests[tests.length - 1].value) : '–', unit: 'min', series: tests.map((t) => t.value), invert: true },
@@ -133,6 +145,7 @@ export const run: TrainingModule = {
   load: (l) => ({ legs: HARD_TYPES.includes(l.type) ? 0.8 : 0.4, hard: HARD_TYPES.includes(l.type) }),
 
   Player: RunPlayer,
+  ProgressExtra: RunStats,
   LogForm,
   records(prev, log) {
     if (log.module !== 'run') return [];

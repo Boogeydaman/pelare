@@ -1,6 +1,6 @@
 import { Play } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { articleFor } from '../../core/articles';
 import { useCtx } from '../../core/ctx';
 import { fmtDate } from '../../core/format';
@@ -9,13 +9,15 @@ import type { PlannedSession } from '../../core/types';
 import type { TrainingModule } from '../../modules/types';
 import { ContentList, Meta } from '../../shared/layout/content';
 import { Empty, Row, Section, Stat } from '../../shared/layout/page';
-import { Primary, Sheet, color } from '../../shared/ui/kit';
+import { Primary, Segmented, Sheet, color } from '../../shared/ui/kit';
 
 export function ModuleHome({ m }: { m: TrainingModule }) {
   const ctx = useCtx();
   const start = useStart();
   const nav = useNavigate();
   const [peek, setPeek] = useState<PlannedSession | null>(null);
+  const [params, setParams] = useSearchParams();
+  const diary = !!m.Diary && params.get('vy') === 'dagbok';
   const data = useMemo(() => ctx && {
     next: m.nextSession(ctx), weekly: m.weekly(ctx), program: m.program(ctx), metrics: m.metrics(ctx),
     quick: m.quickStarts(ctx), history: ctx.logs.filter((l) => l.module === m.id).slice(0, 3),
@@ -44,6 +46,13 @@ export function ModuleHome({ m }: { m: TrainingModule }) {
         </div>
       </header>
 
+      {m.Diary && (
+        <div className="mt-6">
+          <Segmented label="Vy" value={diary ? 'diary' : 'overview'} onChange={(v) => setParams(v === 'diary' ? { vy: 'dagbok' } : {}, { replace: true })}
+            options={[{ value: 'overview', label: 'Översikt' }, { value: 'diary', label: m.Diary.label }]} />
+        </div>
+      )}
+      {diary && m.Diary ? <m.Diary.Component /> : <>
       {/* Next session */}
       <section className="mt-8 rounded-[28px] p-6" style={{ background: color(m.id, 0.1) }}>
         <div className="text-[13px] font-medium" style={{ color: color(m.id) }}>Nästa pass</div>
@@ -104,6 +113,7 @@ export function ModuleHome({ m }: { m: TrainingModule }) {
           <Row key={l.id} title={l.title} sub={`${fmtDate(l.startedAt)} · ${m.describe(l)}`} to={`/logg/${l.id}`} />
         )) : <Empty>Inga {m.noun} än.</Empty>}
       </Section>
+      </>}
 
       <Sheet open={!!peek} onClose={() => setPeek(null)} title={peek?.title ?? ''}>
         {peek && (

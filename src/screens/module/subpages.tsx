@@ -16,11 +16,16 @@ import { gymDaysOf, runsPerWeekOf } from '../../modules/common';
 
 export function ProgramPage({ m }: { m: TrainingModule }) {
   const ctx = useCtx();
+  const [pending, setPending] = useState<string | null>(null);
   if (!ctx) return null;
   const view = m.program(ctx);
   const current = ctx.profile.enrollments[m.id]?.programId ?? m.programs[0].id;
   const choose = (programId: string) => {
     if (programId === current) return;
+    setPending(programId);
+  };
+  const confirmSwitch = (programId: string) => {
+    setPending(null);
     const goals = m.id === 'run' && ['start', '5k', '10k', '15k', '20k'].includes(programId) ? { ...ctx.profile.goals, run: programId as typeof ctx.profile.goals.run } : ctx.profile.goals;
     const next = { ...ctx.profile, goals, enrollments: { ...ctx.profile.enrollments, [m.id]: { programId, startedAt: new Date().toISOString() } } };
     // Picking a gym program also sets the number of gym sessions to what it is built for.
@@ -68,6 +73,19 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
           </button>
         ))}
       </Section>}
+
+      <Sheet open={pending !== null} onClose={() => setPending(null)} title="Byta program?">
+        {pending && (
+          <div className="flex flex-col gap-4 pb-4">
+            <p className="text-[16px] leading-snug">
+              Du är i {view.label.toLowerCase()} av <span className="font-medium">{view.program.name}</span>. Byter du till <span className="font-medium">{m.programs.find((p) => p.id === pending)?.name}</span> börjar det nya programmet från vecka 1, och det du har kvar i det nuvarande nollställs.
+            </p>
+            <p className="text-[14px] text-ink2">Dina loggade pass, vikter, rekord och tester ligger kvar – nya programmet fortsätter från dina vikter.</p>
+            <Primary kind={m.id} onClick={() => confirmSwitch(pending)}>Byt program</Primary>
+            <button onClick={() => setPending(null)} className="h-14 rounded-full border border-rule text-[17px] font-medium">Behåll {view.program.name}</button>
+          </div>
+        )}
+      </Sheet>
     </Page>
   );
 }
@@ -136,6 +154,7 @@ function TestSheet({ open, onClose, defs, module: m }: { open: boolean; onClose:
 // ---------------------------------------------------------------- Library
 
 export function LibraryPage({ m }: { m: TrainingModule }) {
+  useCtx(); // re-render when your own exercises change
   const [q, setQ] = useState('');
   const items = m.library.items.filter((i) => `${i.name} ${i.meta}`.toLowerCase().includes(q.toLowerCase()));
   return (
@@ -145,6 +164,7 @@ export function LibraryPage({ m }: { m: TrainingModule }) {
         <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Sök" aria-label={`Sök ${m.library.title.toLowerCase()}`}
           className="h-full flex-1 bg-transparent text-[17px] outline-none placeholder:text-ink2" />
       </label>
+      {m.LibraryActions && <m.LibraryActions />}
       {m.library.groups.map((g) => {
         const list = items.filter((i) => i.group === g);
         if (!list.length) return null;
@@ -160,8 +180,10 @@ export function LibraryPage({ m }: { m: TrainingModule }) {
 }
 
 export function LibraryDetail({ m }: { m: TrainingModule }) {
+  const ctx = useCtx(); // re-render when your own exercises change
   const { id } = useParams();
   const item = m.library.items.find((i) => i.id === id);
+  if (!ctx) return null;
   if (!item) return <Page title="Hittades inte" back={`/${m.slug}/bibliotek`}><Empty>Den här finns inte längre.</Empty></Page>;
   return (
     <Page kicker={item.group} kind={m.id} title={item.name} back={`/${m.slug}/bibliotek`}>

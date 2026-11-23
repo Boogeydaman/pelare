@@ -88,6 +88,7 @@ export function Settings() {
       {(['gym', 'run'] as const).map((id) => (
         <Sheet key={id} open={edit === id} onClose={() => setEdit(null)} title="Mål">
           <div className="pb-4">
+            {id === 'run' && <p className="mb-3 rounded-2xl bg-ink/[0.05] px-4 py-3 text-[14px] leading-snug">Ett nytt löpmål byter löpprogram och börjar om från vecka 1. Dina loggade pass ligger kvar.</p>}
             <OptionList value={p.goals[id]} options={GOAL_OPTIONS[id]} onChange={(v) => {
               // A new running goal starts that program from week 1.
               const enrollments = id === 'run' && v !== p.goals.run ? { ...p.enrollments, run: { programId: v as string, startedAt: new Date().toISOString() } } : p.enrollments;
