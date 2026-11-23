@@ -295,7 +295,7 @@ export function rollingNext(ctx: ModuleCtx, program: GymProgram): { tpl: Session
   const goal = weeklyTarget(ctx.profile.goals.gym);
   const week = weekVolume(ctx);
   const tired = new Set(notRecovered(ctx));
-  const gym = ctx.logs.filter((l) => l.module === 'gym').sort((a, b) => b.startedAt.localeCompare(a.startedAt));
+  const gym = ctx.logs.filter((l) => l.module === 'gym' && !l.type.startsWith('core')).sort((a, b) => b.startedAt.localeCompare(a.startedAt));
   const recent = gym.slice(0, 4).map((l) => l.type);
   const lastIdx = (type: string) => { const k = gym.findIndex((l) => l.type === type); return k === -1 ? 99 : k; };
   let best = program.sessions[0], bestScore = -Infinity;

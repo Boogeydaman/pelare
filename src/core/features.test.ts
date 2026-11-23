@@ -5,6 +5,8 @@ import { registerCustom, type CustomExercise } from '../modules/gym/custom';
 import { paceZones, riegel, zonePosition } from '../modules/run/pace';
 import type { ModuleCtx } from '../modules/types';
 import { _test, wrappedWeek } from '../screens/Wrapped';
+import { coach } from './coach';
+import { MODULE_LIST } from '../modules/registry';
 import type { Profile, SessionLog, StrengthItem } from './types';
 
 const NOW = new Date('2026-11-22T19:00:00'); // Sunday evening
@@ -85,5 +87,26 @@ describe('Din vecka i siffror', () => {
     expect(s[0].big).toBe('2');
     expect(s.find((x) => x.kind === 'gym')?.big).toBe('2');
     expect(s.find((x) => x.kind === 'run')?.big).toBe('5,2');
+  });
+});
+
+describe('Bålpass', () => {
+  const gymLog = (date: string, type = 'full_a'): SessionLog => ({ id: `${type}${date}`, module: 'gym', type, title: type, startedAt: date, minutes: 10,
+    data: { kind: 'strength', exercises: [{ id: type.startsWith('core') ? 'dead_bug' : 'bench', name: 'x', sets: [{ kg: 0, reps: 10 }], feel: 2 }] } });
+  const mon = new Date('2026-11-23T09:00:00');
+  const c = (logs: SessionLog[]): ModuleCtx => ({ ...ctx(logs), now: mon, checkin: { date: '2026-11-23', feeling: 'okej', minutes: 60, place: 'gym' } });
+  const core = (v: ReturnType<typeof coach>) => v.addOns.some((a) => a.label === 'Bålpass');
+
+  it('föreslås efter passet när ingen bål tränats på ett par dagar', () => {
+    const v = coach(c([]), MODULE_LIST);
+    if (v.primary.module === 'gym' || v.primary.module === 'run') expect(core(v)).toBe(true);
+  });
+
+  it('inte dagen efter ett bålpass, och räknas inte som ett gympass i veckan', () => {
+    const logs = [gymLog('2026-11-23T07:00:00', 'core_a')];
+    const v = coach(c(logs), MODULE_LIST);
+    expect(core(v)).toBe(false);
+    const gym = MODULE_LIST.find((m) => m.id === 'gym')!;
+    expect(gym.weekly(c(logs)).done).toBe(0);
   });
 });

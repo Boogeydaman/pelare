@@ -2,6 +2,7 @@
 // and scores the rest against the week, recovery, day form and time. Rules: docs/SPEC.md section 7.
 import type { Load, ModuleCtx, TrainingModule } from '../modules/types';
 import { isSameDay, weekStart } from './format';
+import { coreDue, coreSession, isCore } from '../modules/gym/core';
 import type { LogData, ModuleId, PlannedSession, Reason, SessionLog } from './types';
 
 const HOUR = 3600_000;
@@ -59,7 +60,7 @@ export function planLoad(s: PlannedSession, modules: TrainingModule[]): Load {
   return modules.find((m) => m.id === s.module)?.load(log) ?? {};
 }
 
-const isHard = (l: SessionLog, modules: TrainingModule[]) => l.replaces === 'gym' || l.replaces === 'run' || !!modules.find((m) => m.id === l.module)?.load(l).hard;
+const isHard = (l: SessionLog, modules: TrainingModule[]) => !isCore(l) && (l.replaces === 'gym' || l.replaces === 'run' || !!modules.find((m) => m.id === l.module)?.load(l).hard);
 
 // ---------------------------------------------------------------- Coach
 
@@ -137,7 +138,7 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
     const left = Math.max(0, w.target - w.done);
     const need = w.target ? left / w.target : 0;
     const urgency = Math.min(1, left / Math.max(1, daysLeft));
-    const doneToday = todayLogs.some((l) => l.module === m.id || l.replaces === m.id);
+    const doneToday = todayLogs.some((l) => (l.module === m.id && !isCore(l)) || l.replaces === m.id);
 
     return m.candidates(ctx).map((s, i): Scored => {
       const load = planLoad(s, modules);
@@ -218,7 +219,16 @@ function addOns(primary: PlannedSession, ctx: ModuleCtx, modules: TrainingModule
     out.push({ when: 'före', label: warm.title, hint: `${warm.minutes} min · väcker leder och puls`, session: warm, fits });
     if (fits) spare -= warm.minutes;
   }
-  if (after) out.push({ when: 'efter', label: after.title, hint: `${after.minutes} min · räknas mot rörlighetsmålet`, session: after, fits: spare >= after.minutes });
+  if (after) {
+    const fits = spare >= after.minutes;
+    out.push({ when: 'efter', label: after.title, hint: `${after.minutes} min · räknas mot rörlighetsmålet`, session: after, fits });
+    if (fits) spare -= after.minutes;
+  }
+  // Core: after every other gym or running session.
+  if (coreDue(ctx, primary)) {
+    const core = coreSession(ctx);
+    out.push({ when: 'efter', label: 'Bålpass', hint: `${core.minutes} min · mage och rygg, vartannat pass`, session: core, fits: spare >= core.minutes });
+  }
   return out;
 }
 

@@ -76,7 +76,7 @@ describe('Coachen', () => {
     for (const minutes of [30, 45, 90]) {
       const v = coach(ctx(base, checkin('pigg', minutes)), MODULE_LIST);
       if (v.primary.module !== 'gym' && v.primary.module !== 'run') continue;
-      expect(v.addOns.map((a) => a.when)).toEqual(['före', 'efter']);
+      expect(v.addOns.map((a) => a.when).slice(0, 2)).toEqual(['före', 'efter']); // a core session may follow
       const total = v.primary.minutes + v.addOns.filter((a) => a.fits).reduce((a, x) => a + x.session.minutes, 0);
       expect(total).toBeLessThanOrEqual(minutes);
     }

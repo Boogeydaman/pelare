@@ -10,6 +10,7 @@ import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } fro
 import { HOWTO } from './howto';
 import { GymPlayer } from './Player';
 import { GymDiary, GymProgramExtra } from './diary';
+import { coreSession } from './core';
 import { GymLibraryActions, isCustom } from './custom';
 import { Link } from 'react-router-dom';
 import { ExerciseProgress, GymExerciseList, gymRecords } from './progress';
@@ -80,6 +81,7 @@ export const gym: TrainingModule = {
       return build(t, nextTemplate(t, programOf(ctx.profile)).tpl, { reasons: ['Dagens programpass med kroppsviktsövningar, för resor eller när gymmet inte passar.'] });
     })() },
     { id: 'bw', label: 'Kort hemmapass', hint: '20 min · 40 s arbete, 20 s vila', session: build({ ...ctx, checkin: { ...ctx.checkin, place: 'travel' } }, PROGRAM_BY_ID.home20.sessions[0]) },
+    { id: 'core', label: 'Bålpass', hint: '6–10 min · mage och rygg', session: coreSession(ctx) },
     { id: 'log', label: 'Logga i efterhand', hint: 'Ett pass du redan har gjort', to: '/gym/logga' },
   ],
   weekly: (ctx) => ({ done: thisWeek(ctx, 'gym').length, target: gymDaysOf(ctx.profile), unit: 'pass' }),
@@ -131,6 +133,7 @@ export const gym: TrainingModule = {
   get library() { return { title: 'Övningar', groups: GROUPS, items: EXERCISES.map(libraryItem) }; },
   describe: (l) => (l.data?.kind === 'strength' ? `${l.data.exercises.length} övningar · ${l.data.exercises.reduce((a, e) => a + e.sets.length, 0)} set` : `${l.minutes} min`),
   load(l) {
+    if (l.type.startsWith('core')) return { upper: 0.1 }; // short core session: not a hard day
     if (l.data?.kind !== 'strength') return { hard: true };
     const m = l.data.exercises.flatMap((e) => EX[e.id]?.primary ?? []);
     return { legs: m.some((x) => ['quads', 'hamstrings', 'glutes'].includes(x)) ? 0.8 : 0.1, upper: m.some((x) => ['chest', 'lats', 'upper_back'].includes(x)) ? 0.8 : 0.1, hard: true };

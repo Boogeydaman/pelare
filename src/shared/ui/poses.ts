@@ -456,3 +456,21 @@ ANIMS.oh_carry = { held: 'dbs', loop: true, anchor: null, ms: 600, hold: 0.05, f
   { torso: -90, legs: [[74, 100], [104, 96]], arms: [[-76, -82], [-74, -80]], feet: [0, 20] },
   { torso: -90, legs: [[104, 96], [74, 100]], arms: [[-76, -82], [-74, -80]], feet: [20, 0] },
 ] };
+
+// ======================================================== Core session
+ANIMS.dead_bug = { ms: 1300, frames: [
+  { torso: 180, head: 180, legs: [[-90, 0], [-88, 2]], arms: [[-90, -90], [-88, -88]] },
+  { torso: 180, head: 180, legs: [[-5, -5], [-88, 2]], arms: [[-90, -90], [-172, -172]] },
+] };
+ANIMS.side_plank = { view: 'front', anchor: null, ms: 1500, hold: 0.4, frames: [
+  { x: 64, torso: -150, head: -150, legs: [[25, 25], [27, 27]], arms: [[85, 85], [100, 95]] },
+  { x: 64, torso: -162, head: -162, legs: [[14, 14], [16, 16]], arms: [[80, 80], [-90, -90]] },
+] };
+ANIMS.pallof = { cable: (p) => [p.S[0] + 34, p.S[1] + 12], frames: [
+  stand({ arms: [[60, 200]] }),
+  stand({ arms: [[2, 0]] }),
+] };
+ANIMS.bird_dog = { anchor: 'K', ms: 1500, hold: 0.4, frames: [
+  { torso: -10, legs: [[90, 180], [92, 180]], arms: [[90, 90], [88, 90]] },
+  { torso: -8, head: -5, legs: [[90, 180], [178, 180]], arms: [[-8, -8], [88, 90]] },
+] };

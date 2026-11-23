@@ -8,7 +8,7 @@ export const logsOf = (ctx: ModuleCtx, m: ModuleId) => ctx.logs.filter((l) => l.
 
 /** This week's sessions for a pillar, including other training logged in its place. */
 export const thisWeek = (ctx: ModuleCtx, m: ModuleId) =>
-  ctx.logs.filter((l) => (l.module === m || l.replaces === m) && new Date(l.startedAt) >= weekStart(ctx.now));
+  ctx.logs.filter((l) => (l.module === m || l.replaces === m) && !(l.module === 'gym' && l.type.startsWith('core')) && new Date(l.startedAt) >= weekStart(ctx.now));
 
 export const distinctDays = (logs: SessionLog[]) => new Set(logs.map((l) => l.startedAt.slice(0, 10))).size;
 

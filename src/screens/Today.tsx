@@ -80,7 +80,7 @@ export function Today() {
           <div className="text-[13px] font-medium" style={{ color: color('mobility') }}>Gör det till en vana: före och efter</div>
           <ul className="mt-1">
             {view.today.addOns.map((a) => (
-              <li key={a.when}>
+              <li key={a.label}>
                 <button onClick={() => start(a.session)} className="flex min-h-[48px] w-full items-center justify-between gap-3 text-left">
                   <span className="min-w-0">
                     <span className="block text-[16px] font-medium">{a.when === 'före' ? 'Före' : 'Efter'}: {a.label}</span>
