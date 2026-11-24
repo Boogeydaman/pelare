@@ -1,6 +1,6 @@
 import { Footprints } from 'lucide-react';
 import { createElement } from 'react';
-import type { LibraryItem, Metric, ProgramOption } from '../../core/types';
+import type { LibraryItem, Metric, ProgramOption, SessionLog } from '../../core/types';
 import { Field, NumberInput, QuickLog, parseNum } from '../../shared/ui/fields';
 import { fmt1, rehabCautious, runsPerWeekOf, thisWeek, weeklySeries } from '../common';
 import { DISTANCE, distanceWeek, programWeek, slotsOf, type DistanceId } from './planner';
@@ -8,6 +8,7 @@ import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { RunPlayer } from './Player';
 import { RunStats } from './stats';
 import { HARD_TYPES, STAGES, easy, easyShare, guard, km, next, runs, stage, strides, tempo, test5k } from './planner';
+import { fmtPaceS } from './pace';
 
 const PROGRAMS: ProgramOption[] = [
   { id: 'start', name: 'Dina första 5 km', weeks: 7, perWeek: 3,
@@ -162,6 +163,12 @@ export const run: TrainingModule = {
     const out = [];
     if (log.minutes > Math.max(...before.map((l) => l.minutes))) out.push({ module: 'run' as const, date: log.startedAt, title: 'Längsta löppasset', detail: `${log.minutes} minuter` });
     if (km(log) > 0 && km(log) > Math.max(0, ...before.map(km))) out.push({ module: 'run' as const, date: log.startedAt, title: 'Längsta distansen', detail: `${fmt1(km(log))} km` });
+    const pace = (l: SessionLog) => (l.minutes * 60) / km(l);
+    const long = before.filter((l) => km(l) >= 3);
+    if (km(log) >= 3 && long.length && pace(log) < Math.min(...long.map(pace))) out.push({ module: 'run' as const, date: log.startedAt, title: 'Snabbaste rundan (3 km+)', detail: `${fmtPaceS(pace(log))} min/km` });
+    const splits = (l: SessionLog) => (l.data?.kind === 'run' ? l.data.splits ?? [] : []);
+    const prevBest = Math.min(Infinity, ...before.flatMap(splits));
+    if (splits(log).length && prevBest < Infinity && Math.min(...splits(log)) < prevBest) out.push({ module: 'run' as const, date: log.startedAt, title: 'Snabbaste kilometern', detail: fmtPaceS(Math.min(...splits(log))) });
     return out;
   },
 };

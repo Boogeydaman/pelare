@@ -11,6 +11,8 @@ import { SOURCE } from './sources';
 import { build } from '../modules/gym/planner';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
 import { paceZones, riegel, zonePosition } from '../modules/run/pace';
+import { summarizeRun } from '../modules/run/summary';
+import { run as runModule } from '../modules/run';
 import type { ModuleCtx } from '../modules/types';
 import { _test, wrappedWeek } from '../screens/Wrapped';
 import { coach } from './coach';
@@ -208,5 +210,35 @@ describe('Efter höftprotes', () => {
     const c: ModuleCtx = { ...at(p), checkin: { date: '2026-11-22', feeling: 'okej', minutes: 60, place: 'gym', hipPain: 6 } };
     const plan = hipAdjust(c, build(c, hipTemplate(c).tpl, { reasons: [''] }));
     expect(plan.reasons[0].text).toMatch(/ömmare/);
+  });
+});
+
+describe('Sammanfattning efter löprundan', () => {
+  const r = (id: string, day: number, minutes: number, distanceKm?: number, extra: object = {}): SessionLog => ({
+    id, module: 'run', type: 'easy', title: 'Lugn', startedAt: new Date(2026, 10, day, 8).toISOString(), minutes,
+    data: { kind: 'run', ...(distanceKm ? { distanceKm } : {}), ...extra },
+  } as SessionLog);
+
+  it('första rundan', () => {
+    expect(summarizeRun(r('a', 10, 30, 4), []).headline).toBe('Första rundan är gjord!');
+  });
+  it('rekord för distans, tempo och km', () => {
+    const prev = [r('a', 5, 30, 4, { splits: [420, 430] }), r('b', 7, 30, 4.2)];
+    const s = summarizeRun(r('c', 10, 32, 5, { splits: [380, 390, 385, 384, 381] }), prev);
+    expect(s.headline).toBe('4 nya rekord!');
+    const recs = runModule.records!(prev, r('c', 10, 32, 5, { splits: [380, 390, 385, 384, 381] }));
+    expect(recs.map((x) => x.title)).toContain('Snabbaste kilometern');
+    expect(recs.map((x) => x.title)).toContain('Snabbaste rundan (3 km+)');
+  });
+  it('tid i målzonen och för fort', () => {
+    const good = summarizeRun(r('c', 10, 30, 4, { zone: { green: 1500, fast: 150, slow: 150 } }), [r('a', 1, 30, 4)]);
+    expect(good.zone?.pct).toBe(83);
+    expect(good.headline).toBe('Perfekt tempo!');
+    const fast = summarizeRun(r('c', 10, 30, 4, { zone: { green: 600, fast: 1000, slow: 200 } }), [r('a', 1, 30, 4)]);
+    expect(fast.lines.join(' ')).toMatch(/för fort.*lugna/i);
+  });
+  it('jämför med förra rundan (nyaste först)', () => {
+    const s = summarizeRun(r('c', 10, 30, 4), [r('b', 8, 28, 4), r('a', 1, 40, 4)]);
+    expect(s.lines.join(' ')).toMatch(/30 s\/km långsammare än förra rundan/);
   });
 });

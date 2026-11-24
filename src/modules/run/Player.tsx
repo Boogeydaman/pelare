@@ -51,14 +51,25 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const gps = useGps(gpsOn, started && !paused, storageKey);
 
   const finished = useRef(false);
+  // For the summary afterwards: seconds in, over and under the target pace, and each kilometre's time.
+  const statsKey = `pelare.runstats:${storageKey}`;
+  const stats = useRef<{ green: number; fast: number; slow: number; last: number; splits: number[] }>((() => {
+    try { return { green: 0, fast: 0, slow: 0, last: 0, splits: [], ...JSON.parse(localStorage.getItem(statsKey) ?? '{}') }; } catch { return { green: 0, fast: 0, slow: 0, last: 0, splits: [] }; }
+  })());
+  const saveStats = () => { try { localStorage.setItem(statsKey, JSON.stringify(stats.current)); } catch { /* ignore */ } };
+
   const finish = useCallback((done: number) => {
     if (finished.current) return;
     finished.current = true;
-    try { localStorage.removeItem(key); } catch { /* ignore */ }
+    try { localStorage.removeItem(key); localStorage.removeItem(statsKey); } catch { /* ignore */ }
     gps.clear();
     const distanceKm = gps.meters >= 50 ? Math.round(gps.meters / 10) / 100 : undefined;
-    onFinish({ kind: 'run', segmentsDone: done, ...(distanceKm ? { distanceKm } : {}) });
-  }, [key, gps, onFinish]);
+    const st = stats.current;
+    const zoneSec = st.green + st.fast + st.slow;
+    onFinish({ kind: 'run', segmentsDone: done, ...(distanceKm ? { distanceKm } : {}),
+      ...(zoneSec >= 60 ? { zone: { green: Math.round(st.green), fast: Math.round(st.fast), slow: Math.round(st.slow) } } : {}),
+      ...(st.splits.length ? { splits: st.splits.map(Math.round) } : {}) });
+  }, [key, statsKey, gps, onFinish]);
 
   // Segment changes: vibrate, and finish at the end.
   const lastIdx = useRef(i);
@@ -92,6 +103,22 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   // Pace zone: say it when you drift out of the green (and stay out ~20 s), and confirm now and then when you are in it.
   const zoneState = useRef<{ status: string; since: number; said: number }>({ status: 'unknown', since: 0, said: 0 });
   const zone = seg && gpsOn ? zoneFor(plan.type, seg, zones) : null;
+  // Time in the target zone (for the summary), counted on every update while a paced part is running.
+  useEffect(() => {
+    const st = stats.current;
+    const t = Date.now();
+    const fresh = gps.lastFix !== null && t - gps.lastFix < 20000;
+    if (started && !paused && zone && gps.pace !== null && fresh && st.last) {
+      const dt = Math.min(5, (t - st.last) / 1000);
+      const x = zonePosition(gps.pace, zone);
+      if (Math.abs(x) <= 1) st.green += dt; else if (x < 0) st.fast += dt; else st.slow += dt;
+    }
+    st.last = started && !paused ? t : 0;
+  });
+  useEffect(() => {
+    const id = setInterval(saveStats, 10000);
+    return () => clearInterval(id);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (!voiceOn || !started || paused || !zone || gps.pace === null) return;
     if (gps.lastFix && Date.now() - gps.lastFix > 20000) return; // stale – the app was asleep
@@ -114,6 +141,7 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
     const at = gps.lastFix ?? Date.now();
     const split = (at - kmMark.current.at) / 1000;
     kmMark.current = { km: k, at };
+    if (split > 60 && split < 1800) { stats.current.splits.push(split); saveStats(); }
     if (voiceOn && Date.now() - at < 20000) { beep(1, 988, 160); speak(`${k} kilometer. Senaste kilometern ${sayPace(split)}.`); }
   }, [gps.meters, started, voiceOn]);
   // Ten seconds left of a hard interval.

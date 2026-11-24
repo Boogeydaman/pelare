@@ -7,6 +7,7 @@ import { fmtClock } from '../core/format';
 import type { Feel, LogData, SessionLog } from '../core/types';
 import { MODULE, MODULE_LIST } from '../modules/registry';
 import { Dim, ON, OnButton, useHold } from '../shared/player/parts';
+import { RunSummary } from '../modules/run/summary';
 import { useTick, useWakeLock } from '../shared/ui/hooks';
 import { Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -121,13 +122,16 @@ export function DonePage() {
         <p className="rise mt-3 text-[18px] text-ink2" style={{ animationDelay: '120ms' }}>
           {log.title} · <span className="num">{log.minutes}</span> min
         </p>
-        {records.length > 0 && (
+        {records.length > 0 && !(log.module === 'run' && log.type !== 'walk') && (
           <div className="rise mt-8 rounded-[24px] px-5 py-4" style={{ background: color(active.plan.module, 0.12), animationDelay: '150ms' }}>
             <div className="flex items-center gap-2 text-[13px] font-semibold" style={{ color: color(active.plan.module) }}><Trophy size={16} aria-hidden="true" /> {records.length === 1 ? 'Nytt rekord' : `${records.length} nya rekord`}</div>
             <ul className="mt-1">
               {records.map((r, i) => <li key={i} className="py-1 text-[16px]"><span className="font-medium">{r.title}</span> · {r.detail.replace(/^Nytt rekord: /, '')}</li>)}
             </ul>
           </div>
+        )}
+        {log.module === 'run' && log.type !== 'walk' && log.data?.kind === 'run' && (
+          <RunSummary log={{ ...log, data: { ...log.data, distanceKm: Number(km.replace(',', '.')) || undefined } }} prev={ctx?.logs ?? []} />
         )}
         <div className="rise mt-12" style={{ animationDelay: '180ms' }}>
           <Pillars week={weeks.after} animateFrom={weeks.before} size="lg" />

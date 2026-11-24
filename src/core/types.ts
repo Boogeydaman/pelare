@@ -97,7 +97,7 @@ export interface ExerciseResult { id: string; name: string; sets: SetResult[]; f
 
 export type LogData =
   | { kind: 'strength'; exercises: ExerciseResult[] }
-  | { kind: 'run'; distanceKm?: number; segmentsDone?: number }
+  | { kind: 'run'; distanceKm?: number; segmentsDone?: number; zone?: { green: number; fast: number; slow: number }; splits?: number[] } // zone: seconds in/over/under the target pace; splits: seconds per km
   | { kind: 'mobility'; holdsDone: number }
   | { kind: 'other'; activity: string };
 
