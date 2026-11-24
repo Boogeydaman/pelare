@@ -113,6 +113,7 @@ export function useGps(enabled: boolean, active: boolean, storageKey: string) {
     status,
     meters: track.current.meters,
     pace: track.current.pace(Date.now()),
+    lastFix: track.current.last?.t ?? null, // time of the latest GPS fix (ms)
     clear: () => { try { localStorage.removeItem(key); } catch { /* ignore */ } },
   };
 }

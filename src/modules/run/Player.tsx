@@ -42,6 +42,7 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const started = clock.startedAt !== null;
   const paused = clock.pausedAt !== null;
   const now = useTick(started && !paused, 250);
+  useWorkerTick(started && !paused);
   const elapsed = started ? (clock.pausedAt ?? now) - clock.startedAt! - clock.pausedMs + clock.skipMs : 0;
   const idx = ends.findIndex((e) => elapsed < e);
   const i = idx === -1 ? segments.length - 1 : idx;
@@ -79,6 +80,10 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const announce = (k: number) => {
     const sg = segments[k];
     if (!sg) return;
+    // Only speak while it is still true: if the app was paused in the background and catches up later,
+    // don't read out a backlog of old segment changes.
+    const segStart = k > 0 ? ends[k - 1] : 0;
+    if (elapsed - segStart > 20000) return;
     const z = gpsOn ? zoneFor(plan.type, sg, zones) : null;
     beep(2, 880, 120);
     speak(`${sg.label}, ${sayMin(sg.seconds)}.${z ? ` Sikta på ${sayPace(z[0])} till ${sayPace(z[1])} per kilometer.` : sg.effort === 'gå' ? '' : sg.effort === 'hårt' ? ' Hårt nu.' : ' Pratbart tempo.'}`);
@@ -89,6 +94,7 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const zone = seg && gpsOn ? zoneFor(plan.type, seg, zones) : null;
   useEffect(() => {
     if (!voiceOn || !started || paused || !zone || gps.pace === null) return;
+    if (gps.lastFix && Date.now() - gps.lastFix > 20000) return; // stale – the app was asleep
     const x = zonePosition(gps.pace, zone);
     const z = zoneState.current;
     const status = Math.abs(x) <= 1 ? 'green' : x < -1.3 ? 'fast' : x > 1.3 ? 'slow' : z.status;
@@ -104,9 +110,11 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   useEffect(() => {
     const k = Math.floor(gps.meters / 1000);
     if (!started || k <= kmMark.current.km) return;
-    const split = (Date.now() - kmMark.current.at) / 1000;
-    kmMark.current = { km: k, at: Date.now() };
-    if (voiceOn) { beep(1, 988, 160); speak(`${k} kilometer. Senaste kilometern ${sayPace(split)}.`); }
+    // Use the GPS fix's own time, so the split is right even if the app handled the fix late.
+    const at = gps.lastFix ?? Date.now();
+    const split = (at - kmMark.current.at) / 1000;
+    kmMark.current = { km: k, at };
+    if (voiceOn && Date.now() - at < 20000) { beep(1, 988, 160); speak(`${k} kilometer. Senaste kilometern ${sayPace(split)}.`); }
   }, [gps.meters, started, voiceOn]);
   // Ten seconds left of a hard interval.
   const tenLeft = useRef(-1);
@@ -267,4 +275,24 @@ function PaceGauge({ zone, pace, hasZones, walk }: { zone: Zone | null; pace: nu
       <Dim className="num text-[13px]">Mål {fmtPaceS(zone[0])}–{fmtPaceS(zone[1])} min/km</Dim>
     </div>
   );
+}
+
+/**
+ * With the screen off, ordinary timers run about once a minute; a dedicated worker's timer is not
+ * throttled that hard. Its messages re-render the player every second, so segment changes and voice
+ * cues come on time even without GPS.
+ */
+function useWorkerTick(active: boolean) {
+  const [, force] = useState(0);
+  useEffect(() => {
+    if (!active || typeof Worker === 'undefined') return;
+    let w: Worker | null = null;
+    let url = '';
+    try {
+      url = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(0)},1000)'], { type: 'text/javascript' }));
+      w = new Worker(url);
+      w.onmessage = () => { if (document.visibilityState === 'hidden') force((n) => n + 1); };
+    } catch { /* not available */ }
+    return () => { w?.terminate(); if (url) URL.revokeObjectURL(url); };
+  }, [active]);
 }
