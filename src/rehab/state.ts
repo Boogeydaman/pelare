@@ -1,21 +1,43 @@
 // Entering and leaving rehab mode.
 import { saveProfile } from '../core/db';
 import type { HipAid, HipRehab, Profile } from '../core/types';
-import { gymProgramFor, rehabPhase, timePhase, weeksFromSurgery } from '../modules/common';
+import { RUN_PER_WEEK, gymProgramFor, rehabPhase, timePhase, weeksFromSurgery } from '../modules/common';
+import { mobilityGoal, type Basics } from '../screens/Basics';
 
 export const inRehab = (p?: Profile | null, now = new Date()) => !!p && rehabPhase(p, now) !== null;
 
-/** Back to the main app. Running stays as walking until the surgeon has cleared it. */
-export function leaveRehab(p: Profile) {
-  const now = new Date().toISOString();
-  const r = p.rehab!;
-  const run = r.cleared ? 'maintain' : 'walk';
-  return saveProfile({
-    ...p, rehab: { ...r, ended: true },
-    goals: { ...p.goals, run: run === 'walk' ? 'walk' : 'start' },
-    enrollments: { ...p.enrollments, gym: { programId: gymProgramFor(p.gymDays ?? 2, p.places, p.homeEquipment), startedAt: now }, run: { programId: run, startedAt: now } },
-  });
+/** What you answered in the basic questions when leaving rehab (the same as in the onboarding). */
+export interface LeaveAnswers extends Basics { cleared?: boolean }
+
+/** The answers from the onboarding (or defaults), as a starting point for the questions when leaving rehab. */
+export function basicsFrom(p: Profile): Basics {
+  return {
+    goals: { ...p.goals, run: p.rehab?.cleared ? (p.goals.run === 'walk' ? 'start' : p.goals.run) : 'walk' },
+    focus: p.mobilityFocus ?? [], gymDays: p.gymDays ?? 2, places: p.places.length ? p.places : ['gym'], equip: p.homeEquipment,
+  };
 }
+
+/** The profile after leaving rehab with these answers: normal programmes, rehab saved (ended) for a return. */
+export function leftRehab(p: Profile, a: LeaveAnswers, now = new Date()): Profile {
+  const at = now.toISOString();
+  const r = p.rehab!;
+  const run = a.goals.run;
+  return {
+    ...p,
+    rehab: { ...r, ended: true, cleared: r.cleared || (run !== 'walk' && a.cleared !== false) },
+    goals: { ...a.goals, mobility: mobilityGoal(a.focus) },
+    mobilityFocus: a.focus, gymDays: a.gymDays, daysPerWeek: a.gymDays + (RUN_PER_WEEK[run] ?? 3),
+    places: a.places, homeEquipment: a.equip,
+    enrollments: {
+      ...p.enrollments,
+      gym: { programId: gymProgramFor(a.gymDays, a.places, a.equip), startedAt: at },
+      run: { programId: run, startedAt: at },
+    },
+  };
+}
+
+/** Back to the main app. Without answers: the onboarding's answers, walking until the surgeon has cleared running. */
+export const leaveRehab = (p: Profile, a: LeaveAnswers = basicsFrom(p)) => saveProfile(leftRehab(p, a));
 
 /** Back into rehab mode, keeping the operation details and what you have read. */
 export function resumeRehab(p: Profile, rehab?: HipRehab) {

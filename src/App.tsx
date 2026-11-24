@@ -6,6 +6,7 @@ import { RehabHome } from './rehab/RehabHome';
 import { RehabPlan } from './rehab/Plan';
 import { RehabCourse, RehabLesson } from './rehab/Course';
 import { RehabTests } from './rehab/Tests';
+import { LeaveRehab } from './rehab/LeaveRehab';
 import { inRehab } from './rehab/state';
 import { useCtx } from './core/ctx';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
@@ -78,6 +79,7 @@ const router = createHashRouter([
       { path: 'veckan', element: <WrappedPage /> },
       { path: 'pass/klart', element: <DonePage /> },
       { path: 'installningar', element: <Settings /> },
+      { path: 'lamna-rehab', element: <LeaveRehab /> },
       { path: '*', element: <Navigate to="/idag" replace /> },
     ],
   },

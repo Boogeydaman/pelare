@@ -1,34 +1,15 @@
 import { ArrowLeft } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState } from 'react';
 import { saveProfile } from '../core/db';
 import { useNavigate } from 'react-router-dom';
-import type { Equip, Goals, HipRehab, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
+import type { Goals, HipRehab, Profile } from '../core/types';
 import { HipDetails } from '../modules/gym/HipRehab';
-import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
 import { RUN_PER_WEEK, gymProgramFor } from '../modules/common';
 import { InstallCard } from '../shared/ui/InstallCard';
-import { IconButton, Kicker, OptionList, Primary, color } from '../shared/ui/kit';
+import { IconButton, OptionList, Primary, color } from '../shared/ui/kit';
+import { BasicQuestion, Q, mobilityGoal, type Basics, type BasicStep } from './Basics';
 
-export const GOAL_OPTIONS: { [K in ModuleId]: { value: Goals[K]; label: string; hint: string }[] } = {
-  gym: [
-    { value: 'stronger', label: 'Bli starkare', hint: 'Tyngre vikter i grundlyften' },
-    { value: 'muscle', label: 'Bygga muskler', hint: 'Mer volym, fler set' },
-    { value: 'maintain', label: 'Hålla mig stark', hint: 'Minsta effektiva dos' },
-  ],
-  run: [
-    { value: 'start', label: 'Dina första 5 km', hint: 'Från noll, med gå-spring · 7 veckor' },
-    { value: '10k', label: 'Dina första 10 km', hint: 'Jag kan springa 30 min utan paus · 8 veckor' },
-    { value: '15k', label: 'Dina första 15 km', hint: 'Jag springer redan 10 km · 10 veckor' },
-    { value: '20k', label: 'Dina första 20 km', hint: 'Jag springer 10 km bekvämt · 12 veckor' },
-    { value: '5k', label: 'Snabbare 5 km', hint: 'Jag springer redan 5 km' },
-  ],
-  mobility: [
-    { value: 'front_split', label: 'Splitt framåt', hint: 'Baksida lår och höftböjare' },
-    { value: 'side_split', label: 'Sidosplitt', hint: 'Insida lår och höfter' },
-    { value: 'hips', label: 'Rörligare höfter', hint: 'För knäböj, löpning och vardag' },
-    { value: 'general', label: 'Rörligare överlag', hint: 'Höfter, axlar och fotleder' },
-  ],
-};
+export { GOAL_OPTIONS } from './Basics';
 
 type Step = 'welcome' | 'rehab' | 'rehabinfo' | 'gym' | 'run' | 'mobility' | 'days' | 'place' | 'health';
 const HEALTH = [
@@ -36,20 +17,11 @@ const HEALTH = [
   'Får du ont i bröstet eller blir yr när du anstränger dig?',
   'Har du en skada eller sjukdom som kan bli sämre av träning?',
 ];
-const MODULE_TITLE: Record<ModuleId, [string, string]> = {
-  gym: ['Gym', 'Vad vill du få ut av styrketräningen?'],
-  run: ['Löpning', 'Vad är ditt löpmål?'],
-  mobility: ['Rörlighet', 'Vill du lägga extra fokus på något?'],
-};
-
 export function Onboarding() {
   const nav = useNavigate();
   const [i, setI] = useState(0);
-  const [goals, setGoals] = useState<Goals>({ gym: 'stronger', run: 'start', mobility: 'front_split' });
-  const [focus, setFocus] = useState<MobilityFocus[]>([]);
-  const [gymDays, setGymDays] = useState(2);
-  const [places, setPlaces] = useState<Place[]>(['gym']);
-  const [equip, setEquip] = useState<Equip[]>([]);
+  const [b, setB] = useState<Basics>({ goals: { gym: 'stronger', run: 'start', mobility: 'front_split' }, focus: [], gymDays: 2, places: ['gym'], equip: [] });
+  const { goals, focus, gymDays, places, equip } = b;
   const [health, setHealth] = useState(HEALTH.map(() => false));
   // Training after a hip replacement: asked first; then the date, side and approach decide the programme.
   const [hip, setHip] = useState(false);
@@ -65,7 +37,7 @@ export function Onboarding() {
     const now = new Date().toISOString();
     const gymProgram = hip ? 'hip_rehab' : gymProgramFor(gymDays, places, equip);
     const runGoal: Goals['run'] = hip ? 'walk' : goals.run;
-    const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
+    const legacy = mobilityGoal(focus);
     const profile: Profile = {
       goals: { ...goals, run: runGoal, mobility: legacy }, daysPerWeek: gymDays + (RUN_PER_WEEK[runGoal] ?? 3), gymDays: hip ? 3 : gymDays, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
       ...(hip ? { rehab: { side: 'höger' as const, approach: 'okand' as const, ...info, kind: 'hip' as const, surgery, passed: {} } } : {}),
@@ -130,44 +102,7 @@ export function Onboarding() {
             <p className="mt-6 rounded-2xl bg-ink/[0.06] p-4 text-[14px] leading-snug">Appen ersätter inte din kirurg eller fysioterapeut. Följ alltid de restriktioner och det program du fått från dem – Pelare hjälper dig att hålla igång och bygga vidare.</p>
           </Q>
         )}
-        {(step === 'gym' || step === 'run') && (
-          <Q kicker={MODULE_TITLE[step][0]} kind={step} title={MODULE_TITLE[step][1]}>
-            <OptionList value={goals[step]} options={GOAL_OPTIONS[step]} onChange={(v) => setGoals({ ...goals, [step]: v } as Goals)} />
-          </Q>
-        )}
-        {step === 'mobility' && (
-          <Q kicker={MODULE_TITLE.mobility[0]} kind="mobility" title={MODULE_TITLE.mobility[1]}>
-            <p className="-mt-4 mb-4 text-[16px] text-ink2">Hela kroppen ingår alltid – axlar, rygg, höfter, ben och fotleder varje vecka. Välj gärna ett eller flera områden som ska få extra tid, eller inget alls.</p>
-            <OptionList multi value={focus} options={FOCUS_OPTIONS} onChange={(v) => setFocus((f) => (f.includes(v) ? f.filter((x) => x !== v) : [...f, v]))} />
-          </Q>
-        )}
-        {step === 'days' && (
-          <Q kicker="Gym" kind="gym" title="Hur många gympass i veckan?">
-            <OptionList value={gymDays} onChange={setGymDays} options={[
-              { value: 1, label: '1 pass', hint: 'Bättre än inget – men två ger mer' },
-              { value: 2, label: '2 pass', hint: 'Minsta effektiva dosen, och WHO:s rekommendation' },
-              { value: 3, label: '3 pass', hint: 'Helkropp tre gånger i veckan' },
-              { value: 4, label: '4 pass', hint: 'Över- och underkropp varannan gång' },
-            ]} />
-            <p className="mt-6 text-[16px] leading-snug text-ink2">
-              Löpningen följer ditt löpprogram: <span className="font-medium text-ink">{RUN_PER_WEEK[goals.run] ?? 3} pass i veckan</span>.
-              Totalt blir det <span className="font-medium text-ink">{gymDays + (RUN_PER_WEEK[goals.run] ?? 3)} pass i veckan</span>. Korta stretchpass räknas inte – de görs de flesta dagar.
-            </p>
-          </Q>
-        )}
-        {step === 'place' && (
-          <Q title="Var tränar du?">
-            <OptionList multi value={places} onChange={(v) => setPlaces((p) => (p.includes(v) ? p.filter((x) => x !== v) : [...p, v]))}
-              options={[{ value: 'gym', label: 'På gym', hint: 'Skivstång, hantlar och maskiner' }, { value: 'home', label: 'Hemma', hint: 'Kroppsvikt, eller det du har' }]} />
-            {places.includes('home') && (
-              <div className="mt-8">
-                <div className="mb-1 text-[14px] text-ink2">Vad har du hemma?</div>
-                <OptionList multi value={equip} onChange={(v) => setEquip((e) => (e.includes(v) ? e.filter((x) => x !== v) : [...e, v]))}
-                  options={[{ value: 'dumbbell', label: 'Hantlar' }, { value: 'band', label: 'Gummiband' }, { value: 'pullup_bar', label: 'Chinsstång' }]} />
-              </div>
-            )}
-          </Q>
-        )}
+        {(step === 'gym' || step === 'run' || step === 'mobility' || step === 'days' || step === 'place') && <BasicQuestion step={step as BasicStep} b={b} set={setB} />}
         {step === 'health' && (
           <Q title="Innan vi börjar">
             {HEALTH.map((q, k) => (
@@ -188,16 +123,6 @@ export function Onboarding() {
         {step === 'health' ? <Primary onClick={finish}>Visa dagens pass</Primary>
           : <Primary onClick={next} disabled={(step === 'place' && places.length === 0) || (step === 'rehabinfo' && !surgery)}>Fortsätt</Primary>}
       </div>
-    </div>
-  );
-}
-
-function Q({ kicker, kind, title, children }: { kicker?: string; kind?: ModuleId; title: string; children: ReactNode }) {
-  return (
-    <div>
-      {kicker && <Kicker kind={kind} className="mb-3">{kicker}</Kicker>}
-      <h1 className="mb-8 font-serif text-title">{title}</h1>
-      {children}
     </div>
   );
 }

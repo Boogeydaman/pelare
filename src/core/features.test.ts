@@ -7,7 +7,7 @@ import { gymDaysOf, rehabCautious, rehabPhase, runsPerWeekOf, waitingFor } from 
 import { stretchOk } from '../modules/mobility/rehab';
 import { CHAPTERS, PHASE_INFO, chaptersFor } from '../rehab/content';
 import { CRITERIA, HIP_TESTS, criterionByTest, latestTests, testDue } from '../rehab/criteria';
-import { inRehab, migratedPassed } from '../rehab/state';
+import { basicsFrom, inRehab, leftRehab, migratedPassed } from '../rehab/state';
 import { SOURCE } from './sources';
 import { build } from '../modules/gym/planner';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
@@ -280,6 +280,29 @@ describe('Efter höftprotes', () => {
     expect(inRehab(hip('2026-11-15'), NOW)).toBe(true);
     expect(inRehab(hip('2026-12-15'), NOW)).toBe(true);
     expect(inRehab(hip('2026-11-15', { ended: true }), NOW)).toBe(false);
+  });
+
+  it('lämna rehabläget: svaren på startfrågorna ger de vanliga programmen', () => {
+    const p = { ...hip('2026-03-01'), gymDays: 3, mobilityFocus: [] };
+    const start = basicsFrom(p);
+    expect(start.goals.run).toBe('walk'); // no go-ahead for running yet
+    const out = leftRehab(p, { goals: { gym: 'muscle', run: 'walk', mobility: 'general' }, focus: ['hips'], gymDays: 2, places: ['gym'], equip: [] }, NOW);
+    expect(out.rehab?.ended).toBe(true);
+    expect(out.rehab?.cleared).toBeFalsy();
+    expect(out.goals.gym).toBe('muscle');
+    expect(out.goals.mobility).toBe('hips');
+    expect(out.mobilityFocus).toEqual(['hips']);
+    expect(out.gymDays).toBe(2);
+    expect(out.enrollments.gym.programId).toBe('minimal');
+    expect(out.enrollments.run.programId).toBe('walk');
+    expect(inRehab(out, NOW)).toBe(false);
+    // choosing a running goal records the go-ahead
+    const run = leftRehab(p, { ...start, goals: { ...start.goals, run: '5k' }, cleared: true }, NOW);
+    expect(run.rehab?.cleared).toBe(true);
+    expect(run.enrollments.run.programId).toBe('5k');
+    expect(basicsFrom(run).goals.run).toBe('5k');
+    // ticked the go-ahead but chose walking after all: not recorded
+    expect(leftRehab(p, { ...start, cleared: true }, NOW).rehab?.cleared).toBeFalsy();
   });
 
   it('mer svullet på morgonen ger ett lättare pass', () => {

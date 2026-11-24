@@ -16,7 +16,7 @@ import { InstallCard } from '../shared/ui/InstallCard';
 import { Primary, Sheet } from '../shared/ui/kit';
 import { CHAPTERS, PHASE_INFO, REHAB, chaptersFor, rehabTint } from './content';
 import { AIDS, CRITERIA, PREP, criterionByTest, latestTests, nextAid, testDue } from './criteria';
-import { confirmPhase, leaveRehab, migrateRehab, setAid, togglePrep } from './state';
+import { confirmPhase, migrateRehab, setAid, togglePrep } from './state';
 
 const DAY = 864e5;
 
@@ -152,14 +152,14 @@ export function RehabHome() {
 
       <Sheet open={leave} onClose={() => setLeave(false)} title="Lämna rehabläget?">
         <div className="flex flex-col gap-4 pb-4">
-          <p className="text-[16px] leading-snug">Du går till den vanliga appen med gym, löpning och rörlighet. Ditt rehabprogram, dina tester och det du läst sparas.</p>
+          <p className="text-[16px] leading-snug">Du går till den vanliga appen med gym, löpning och rörlighet. Först får du svara på samma frågor som alla får första gången, så att programmen passar dig. Ditt rehabprogram, dina tester och det du läst sparas.</p>
           {(ph < 5 || !p.rehab?.cleared) && (
             <p className="rounded-2xl px-4 py-3 text-[14px] leading-snug" style={{ background: rehabTint(0.12) }}>
               Du är i fas {ph}. Den vanliga appen anpassar inte övningarna efter din höft – lämna bara om din fysioterapeut eller kirurg säger att du kan träna fritt. Löpningen fortsätter som promenader tills du markerat klartecken.
             </p>
           )}
           <p className="text-[14px] text-ink2">Du kan gå tillbaka till rehabläget när du vill: Inställningar → Träning efter höftprotes → Gå tillbaka till rehabläget.</p>
-          <Primary onClick={async () => { await leaveRehab(p); setLeave(false); nav('/idag', { replace: true }); }}>Lämna rehabläget</Primary>
+          <Primary onClick={() => { setLeave(false); nav('/lamna-rehab'); }}>Fortsätt till frågorna</Primary>
           <button onClick={() => setLeave(false)} className="h-14 rounded-full border border-rule text-[17px] font-medium">Stanna kvar</button>
         </div>
       </Sheet>

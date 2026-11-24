@@ -7,7 +7,7 @@ import { saveProfile } from '../../core/db';
 import type { HipApproach, HipFixation, HipRehab, Profile } from '../../core/types';
 import { OptionList } from '../../shared/ui/kit';
 import { REHAB_PHASES, phaseOf, rehabPhase, weeksFromSurgery } from '../common';
-import { leaveRehab, resumeRehab, undoPhase } from '../../rehab/state';
+import { resumeRehab, undoPhase } from '../../rehab/state';
 import { WARNINGS } from '../../rehab/criteria';
 import { precautions } from './hip';
 
@@ -163,7 +163,7 @@ export function HipRehabSettings() {
         </div>
       )}
       <Toggle on={!!r.cleared} onClick={() => set({ cleared: !r.cleared })} title="Klartecken för fri träning" sub="Från kirurg eller fysioterapeut: löpning och djupa höftstretchar (från fas 5)" />
-      <button onClick={() => leaveRehab(p)} className="min-h-[44px] text-left text-[15px] font-medium underline underline-offset-4">Lämna rehabläget och gå till den vanliga appen</button>
+      <Link to="/lamna-rehab" className="flex min-h-[44px] items-center text-left text-[15px] font-medium underline underline-offset-4">Lämna rehabläget och gå till den vanliga appen</Link>
       <p className="-mt-4 text-[13px] text-ink2">Du kan alltid komma tillbaka här. Lämna bara om din fysioterapeut eller kirurg säger att du kan träna fritt.</p>
     </div>
   );
