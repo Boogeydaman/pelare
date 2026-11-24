@@ -2,6 +2,7 @@ import { ChevronLeft, ChevronRight, Settings2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCtx } from '../core/ctx';
+import { RehabStats } from '../rehab/RehabStats';
 import { fmtDate, isSameDay, weekNumber, weekStart } from '../core/format';
 import type { LogModule } from '../core/types';
 import { recentRecords } from '../core/records';
@@ -38,6 +39,8 @@ export function You() {
       </header>
 
       <section className="mt-8"><Pillars week={week} size="lg" /></section>
+
+      <RehabStats />
 
       <Section title="Kalender">
         <div className="border-t border-rule pt-3">

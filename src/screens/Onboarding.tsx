@@ -56,7 +56,7 @@ export function Onboarding() {
   const [side, setSide] = useState<HipRehab['side']>('höger');
   const [approach, setApproach] = useState<HipApproach>('okand');
   const steps: Step[] = hip
-    ? ['welcome', 'rehab', 'rehabinfo', 'gym', 'mobility', 'place', 'health']
+    ? ['welcome', 'rehab', 'rehabinfo', 'place', 'health']
     : ['welcome', 'rehab', 'gym', 'run', 'mobility', 'days', 'place', 'health'];
   const step = steps[i];
   const next = () => setI((x) => Math.min(steps.length - 1, x + 1));

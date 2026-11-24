@@ -1,4 +1,6 @@
-import { CircleUser, Sun } from 'lucide-react';
+import { BookOpen, CircleUser, ClipboardList, Sun } from 'lucide-react';
+import { useCtx } from '../../core/ctx';
+import { inRehab } from '../../rehab/state';
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useActive } from '../../core/db';
@@ -11,9 +13,20 @@ const TABS = [
   { to: '/du', label: 'Du', icon: CircleUser, kind: undefined },
 ];
 
+// Rehab mode is its own part of the app, with its own tabs.
+const REHAB_TABS = [
+  { to: '/idag', label: 'I dag', icon: Sun, kind: undefined },
+  { to: '/rehab/plan', label: 'Plan', icon: ClipboardList, kind: undefined },
+  { to: '/rehab/las', label: 'Lär dig', icon: BookOpen, kind: undefined },
+  { to: '/du', label: 'Du', icon: CircleUser, kind: undefined },
+];
+
 export function TabLayout() {
   const { pathname } = useLocation();
   const active = useActive();
+  const ctx = useCtx();
+  const rehab = inRehab(ctx?.profile, ctx?.now);
+  const tabs = rehab ? REHAB_TABS : TABS;
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
 
   return (
@@ -29,11 +42,11 @@ export function TabLayout() {
       )}
       <nav className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-rule bg-paper/92 backdrop-blur-md" aria-label="Huvudmeny">
         <div className="mx-auto flex max-w-lg px-2">
-          {TABS.map(({ to, label, icon: Icon, kind }) => (
+          {tabs.map(({ to, label, icon: Icon, kind }) => (
             <NavLink key={to} to={to} className="flex-1">
               {({ isActive }) => (
                 <span className={`flex h-[58px] flex-col items-center justify-center gap-1 text-[11px] font-medium transition-colors ${isActive ? 'text-ink' : 'text-ink2'}`}>
-                  <Icon size={22} strokeWidth={isActive ? 2.1 : 1.6} style={isActive && kind ? { color: color(kind) } : undefined} aria-hidden="true" />
+                  <Icon size={22} strokeWidth={isActive ? 2.1 : 1.6} style={isActive && kind ? { color: color(kind) } : isActive && rehab ? { color: 'rgb(var(--rehab))' } : undefined} aria-hidden="true" />
                   {label}
                 </span>
               )}

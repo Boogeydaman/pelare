@@ -5,8 +5,9 @@ import { Link } from 'react-router-dom';
 import { useCtx } from '../../core/ctx';
 import { saveProfile } from '../../core/db';
 import type { HipApproach, HipRehab, Profile } from '../../core/types';
-import { OptionList, color } from '../../shared/ui/kit';
-import { REHAB_PHASES, gymProgramFor, rehabPhase, weeksSinceSurgery } from '../common';
+import { OptionList } from '../../shared/ui/kit';
+import { REHAB_PHASES, rehabPhase, weeksSinceSurgery } from '../common';
+import { leaveRehab, resumeRehab } from '../../rehab/state';
 import { precautions } from './hip';
 
 export function HipRehabCard() {
@@ -19,14 +20,14 @@ export function HipRehabCard() {
   const r = ctx.profile.rehab!;
   const restrict = w < 6 ? precautions(ctx.profile) : null;
   return (
-    <section className="mt-4 rounded-[22px] px-5 py-4" style={{ background: color('gym', 0.1) }}>
+    <section className="mt-4 rounded-[22px] px-5 py-4" style={{ background: 'rgb(var(--rehab) / 0.1)' }}>
       <div className="flex items-baseline justify-between gap-3">
-        <span className="text-[13px] font-medium" style={{ color: color('gym') }}>Efter höftprotes · {r.side} höft</span>
+        <span className="text-[13px] font-medium" style={{ color: 'rgb(var(--rehab))' }}>Efter höftprotes · {r.side} höft</span>
         <span className="num text-[13px] text-ink2">vecka {Math.floor(w) + 1}</span>
       </div>
       <div className="mt-1 text-[18px] font-semibold">Fas {ph} av 5: {REHAB_PHASES[ph - 1].name}</div>
       <div className="mt-2 flex gap-1.5" aria-hidden="true">
-        {REHAB_PHASES.map((p) => <span key={p.n} className="h-1.5 flex-1 rounded-full" style={{ background: p.n <= ph ? color('gym') : color('gym', 0.18) }} />)}
+        {REHAB_PHASES.map((p) => <span key={p.n} className="h-1.5 flex-1 rounded-full" style={{ background: p.n <= ph ? 'rgb(var(--rehab))' : 'rgb(var(--rehab) / 0.18)' }} />)}
       </div>
       {r.holdPhase && <p className="mt-2 text-[13px] text-ink2">Du har valt att stanna kvar i fas {r.holdPhase}.</p>}
       {restrict && <p className="mt-3 text-[14px] leading-snug">{restrict}</p>}
@@ -42,7 +43,7 @@ export function HipRehabCard() {
         </ul>
       )}
       <div className="mt-2 flex gap-4 text-[14px]">
-        <Link to="/las/hoftprotes" className="font-medium underline underline-offset-4">Läs om träningen</Link>
+        <Link to="/rehab/las" className="font-medium underline underline-offset-4">Läs om träningen</Link>
         <Link to="/installningar#hoft" className="text-ink2 underline underline-offset-4">Ändra</Link>
       </div>
     </section>
@@ -56,12 +57,13 @@ export function HipRehabSettings() {
   const p = ctx.profile;
   const r = p.rehab;
   const set = (patch: Partial<HipRehab>) => saveProfile({ ...p, rehab: { ...(r ?? { kind: 'hip', surgery: new Date().toISOString().slice(0, 10), side: 'höger', approach: 'okand' }), ...patch } });
-  const start = () => saveProfile(withRehab(p, { kind: 'hip', surgery: new Date().toISOString().slice(0, 10), side: 'höger', approach: 'okand' }));
+  const start = () => resumeRehab(p, { kind: 'hip', surgery: new Date().toISOString().slice(0, 10), side: 'höger', approach: r?.approach ?? 'okand' });
   if (!r || r.ended) {
     return (
       <div className="border-t border-rule pt-3">
-        <p className="text-[14px] text-ink2">Har du opererat in en höftprotes? Då får du ett program som följer veckorna efter operationen, med promenader i stället för löpning.</p>
-        <button onClick={start} className="mt-3 min-h-[44px] text-[15px] font-medium underline underline-offset-4">Starta träning efter höftprotes</button>
+        <p className="text-[14px] text-ink2">{r ? `Du lämnade rehabläget. Operationen den ${r.surgery} och det du läst finns sparat.` : 'Har du opererat in en höftprotes? Då blir appen en egen rehabdel med ett program som följer veckorna efter operationen, lektioner och promenader i stället för löpning.'}</p>
+        {r && <button onClick={() => resumeRehab(p)} className="mt-3 flex h-12 w-full items-center justify-center rounded-full text-[15px] font-semibold" style={{ background: 'rgb(var(--rehab))', color: 'rgb(var(--onpillar))' }}>Gå tillbaka till rehabläget</button>}
+        <button onClick={start} className="mt-3 min-h-[44px] text-[15px] font-medium underline underline-offset-4">{r ? 'Ny operation – börja om från fas 1' : 'Starta rehabläget (träning efter höftprotes)'}</button>
       </div>
     );
   }
@@ -90,7 +92,8 @@ export function HipRehabSettings() {
         <span><span className="block text-[16px] font-medium">Klartecken från kirurg eller fysioterapeut</span><span className="block text-[13px] text-ink2">För fri träning, löpning och djupa höftstretchar (gäller från fas 5)</span></span>
         <span className="text-[15px] text-ink2">{r.cleared ? 'Ja' : 'Nej'}</span>
       </button>
-      <button onClick={() => saveProfile({ ...p, rehab: { ...r, ended: true }, enrollments: { ...p.enrollments, gym: { programId: gymProgramFor(p.gymDays ?? 2, p.places, p.homeEquipment), startedAt: new Date().toISOString() } } })} className="min-h-[44px] text-left text-[15px] font-medium underline underline-offset-4">Avsluta rehabläget och träna som vanligt</button>
+      <button onClick={() => leaveRehab(p)} className="min-h-[44px] text-left text-[15px] font-medium underline underline-offset-4">Lämna rehabläget och gå till den vanliga appen</button>
+      <p className="-mt-2 text-[13px] text-ink2">Du kan alltid komma tillbaka här. Lämna bara om din fysioterapeut eller kirurg säger att du kan träna fritt.</p>
     </div>
   );
 }

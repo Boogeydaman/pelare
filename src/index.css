@@ -16,6 +16,7 @@
   --gym: 185 80 47;
   --run: 46 79 134;
   --mobility: 84 128 90;
+  --rehab: 38 112 118;
   --onpillar: 251 249 244;
   color-scheme: light;
 }
@@ -31,6 +32,8 @@
     --gym: 224 122 85;
     --run: 124 159 219;
     --mobility: 141 184 146;
+  --rehab: 110 184 188;
+    --rehab: 110 184 188;
     --onpillar: 20 19 16;
     color-scheme: dark;
   }

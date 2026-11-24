@@ -2,6 +2,11 @@ import { FigureSheet } from './dev/FigureSheet';
 import { CustomExercisePage } from './modules/gym/custom';
 import { WrappedPage } from './screens/Wrapped';
 import { Splash } from './screens/Splash';
+import { RehabHome } from './rehab/RehabHome';
+import { RehabPlan } from './rehab/Plan';
+import { RehabCourse, RehabLesson } from './rehab/Course';
+import { inRehab } from './rehab/state';
+import { useCtx } from './core/ctx';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
 import { CtxProvider } from './core/ctx';
 import { useProfile } from './core/db';
@@ -19,6 +24,12 @@ import { You } from './screens/You';
 import { TabLayout } from './shared/layout/TabLayout';
 
 /** Waits for the database, then shows onboarding or the app. */
+/** I dag: the rehab mode's own home when you are in it, otherwise the normal coach. */
+function TodayOrRehab() {
+  const ctx = useCtx();
+  return inRehab(ctx?.profile, ctx?.now) ? <RehabHome /> : <Today />;
+}
+
 function Root() {
   const profile = useProfile();
   if (profile === undefined) return null;
@@ -46,7 +57,10 @@ const router = createHashRouter([
         element: <TabLayout />,
         children: [
           { index: true, element: <Navigate to="/idag" replace /> },
-          { path: 'idag', element: <Today /> },
+          { path: 'idag', element: <TodayOrRehab /> },
+          { path: 'rehab/plan', element: <RehabPlan /> },
+          { path: 'rehab/las', element: <RehabCourse /> },
+          { path: 'rehab/las/:id', element: <RehabLesson /> },
           { path: 'du', element: <You /> },
           { path: 'historik', element: <HistoryPage /> },
           { path: 'logg/:id', element: <SessionDetail /> },

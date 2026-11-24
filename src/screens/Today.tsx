@@ -13,7 +13,6 @@ import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
 import { InstallCard } from '../shared/ui/InstallCard';
 import { WrappedCard } from './Wrapped';
-import { HipRehabCard } from '../modules/gym/HipRehab';
 import { Row } from '../shared/layout/page';
 import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
@@ -60,7 +59,6 @@ export function Today() {
         <span className="text-[15px] text-ink2">Ändra</span>
       </button>
 
-      <HipRehabCard />
       <WrappedCard />
       <SampleBanner />
       <div className="mt-4 empty:hidden"><InstallCard /></div>
@@ -115,7 +113,7 @@ export function Today() {
         </section>
       )}
 
-      <WhyToday kind={main.module} />
+      <WhyToday kind={main.module} walk={main.type === 'walk'} />
 
       <WeekLeft view={view.today} />
 
@@ -171,9 +169,10 @@ export function Today() {
 }
 
 /** Front-page section: the thinking behind today's session, with a way into the articles. */
-function WhyToday({ kind }: { kind: PlannedSession['module'] }) {
-  const p = PRINCIPLE[kind];
-  const a = articleFor(kind);
+function WhyToday({ kind, walk }: { kind: PlannedSession['module']; walk?: boolean }) {
+  // A walk (after a hip replacement) is not a run: explain walking instead.
+  const p = walk ? { title: 'Varför promenad i dag?', text: 'Promenader och cykel bygger kondition utan att belasta den nya höften med stötar. Längden ökar vecka för vecka – löpning väntar tills din kirurg har gett klartecken.' } : PRINCIPLE[kind];
+  const a = walk ? ARTICLE.hoftprotes : articleFor(kind);
   return (
     <section className="mt-8 rounded-[24px] border border-rule px-5 py-5">
       <Kicker kind={kind}>Därför i dag</Kicker>

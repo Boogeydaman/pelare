@@ -50,9 +50,10 @@ export interface HipRehab {
   holdPhase?: number; // stay in this phase even if time says the next one
   cleared?: boolean; // surgeon/physio has cleared free training (running etc.)
   ended?: boolean; // back to normal training
+  read?: string[]; // lessons read in the rehab course
 }
 
-export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where }
+export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where; hipPain?: number }
 
 // ---------- Plans ----------
 

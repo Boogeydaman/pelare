@@ -69,8 +69,11 @@ export function hipAdjust(ctx: ModuleCtx, p: PlannedSession): PlannedSession {
     'Smärta upp till 5 av 10 under passet är okej om den har lagt sig till nästa morgon. Följ alltid din kirurgs och fysioterapeuts råd.',
   ];
   let content = p.content;
-  if (pain !== undefined && pain > 5 && content.kind === 'strength') {
-    reasons.unshift(`Förra passet gjorde ont (${pain} av 10). I dag ett set färre och lägsta antalet reps – blir det inte bättre, kontakta din fysioterapeut.`);
+  const morning = ctx.checkin.hipPain;
+  if (((pain !== undefined && pain > 5) || (morning !== undefined && morning >= 6)) && content.kind === 'strength') {
+    reasons.unshift(morning !== undefined && morning >= 6
+      ? 'Höften är ömmare i dag än i går kväll. I dag ett set färre och lägsta antalet reps – blir det inte bättre på några dagar, kontakta din fysioterapeut.'
+      : `Förra passet gjorde ont (${pain} av 10). I dag ett set färre och lägsta antalet reps – blir det inte bättre, kontakta din fysioterapeut.`);
     content = { ...content, items: content.items.map((i) => ({ ...i, sets: Math.max(1, i.sets - 1), target: i.reps[0] })) };
   }
   return { ...p, content, effort: ph <= 3 ? 'lugnt' : 'medel', reasons: [...reasons.map((text) => ({ text })), ...p.reasons.slice(1)] };

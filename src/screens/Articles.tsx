@@ -33,7 +33,7 @@ export function ArticleRow({ a }: { a: Article }) {
 }
 
 /** Renders "[12]" references as small superscript links to the source list. */
-function withRefs(text: string) {
+export function withRefs(text: string) {
   const parts = text.split(/(\[\d+\])/g);
   return parts.map((p, i) => {
     const m = p.match(/^\[(\d+)\]$/);

@@ -5,6 +5,9 @@ import { splitWarning } from '../modules/gym/diary';
 import { hipTemplate, hipAdjust } from '../modules/gym/hip';
 import { gymDaysOf, rehabPhase, runsPerWeekOf } from '../modules/common';
 import { stretchOk } from '../modules/mobility/rehab';
+import { LESSONS, PHASE_INFO, lessonsFor } from '../rehab/content';
+import { inRehab } from '../rehab/state';
+import { SOURCE } from './sources';
 import { build } from '../modules/gym/planner';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
 import { paceZones, riegel, zonePosition } from '../modules/run/pace';
@@ -189,5 +192,21 @@ describe('Efter höftprotes', () => {
     const v = coach(at(hip('2026-09-20')), MODULE_LIST);
     for (const s of [v.primary, ...v.alternatives]) if (s.module === 'run') expect(s.type).toBe('walk');
     expect(v.addOns.some((a) => a.label === 'Djurrörelser')).toBe(false);
+  });
+
+  it('rehabläget: kursen låses upp fas för fas och alla källor finns', () => {
+    expect(lessonsFor(1).every((l) => l.phase === 1)).toBe(true);
+    expect(lessonsFor(5).length).toBe(LESSONS.length);
+    for (const l of LESSONS) for (const n of l.sources) expect(SOURCE[n], `${l.id} → ${n}`).toBeDefined();
+    for (let ph = 1; ph <= 5; ph++) expect(PHASE_INFO[ph].goals.length).toBeGreaterThanOrEqual(3);
+    expect(inRehab(hip('2026-11-15'), NOW)).toBe(true);
+    expect(inRehab(hip('2026-11-15', { ended: true }), NOW)).toBe(false);
+  });
+
+  it('höften ondare på morgonen ger ett lättare pass', () => {
+    const p = hip('2026-09-20');
+    const c: ModuleCtx = { ...at(p), checkin: { date: '2026-11-22', feeling: 'okej', minutes: 60, place: 'gym', hipPain: 6 } };
+    const plan = hipAdjust(c, build(c, hipTemplate(c).tpl, { reasons: [''] }));
+    expect(plan.reasons[0].text).toMatch(/ömmare/);
   });
 });
