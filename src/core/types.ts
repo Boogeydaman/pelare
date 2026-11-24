@@ -34,6 +34,8 @@ export interface Profile {
   mobilityFocus?: MobilityFocus[];
   /** Preferred days for gym and running, 0 = Monday. Empty = spread automatically. */
   trainingDays?: number[];
+  /** Start screen: shown when the app starts. Off = skip it; text = your own line, e.g. a goal. */
+  splash?: { off?: boolean; text?: string };
   createdAt: string;
 }
 

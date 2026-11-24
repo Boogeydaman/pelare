@@ -10,6 +10,7 @@ import { Page, Row, Section } from '../shared/layout/page';
 import { InstallCard } from '../shared/ui/InstallCard';
 import { OptionList, Primary, Segmented, Sheet } from '../shared/ui/kit';
 import { GOAL_OPTIONS } from './Onboarding';
+import { SplashSettings } from './Splash';
 import { gymDaysOf, gymProgramFor, runsPerWeekOf } from '../modules/common';
 import { WEEKDAYS } from '../core/week';
 
@@ -61,6 +62,10 @@ export function Settings() {
           <div className="border-t border-rule pt-4"><InstallCard dismissible={false} /></div>
           <p className="pt-3 text-[14px] text-ink2">Redan installerad? Då syns inget här. Din data ligger i telefonens lagring och skickas aldrig någonstans.</p>
           <p className="num pt-2 text-[14px] text-ink2">Version {__APP_VERSION__}</p>
+        </Section>
+
+        <Section title="Startskärm">
+          <SplashSettings />
         </Section>
 
         <Section title="Utseende">

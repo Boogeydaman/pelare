@@ -1,6 +1,7 @@
 import { FigureSheet } from './dev/FigureSheet';
 import { CustomExercisePage } from './modules/gym/custom';
 import { WrappedPage } from './screens/Wrapped';
+import { Splash } from './screens/Splash';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
 import { CtxProvider } from './core/ctx';
 import { useProfile } from './core/db';
@@ -22,7 +23,7 @@ function Root() {
   const profile = useProfile();
   if (profile === undefined) return null;
   if (profile === null) return <Onboarding />;
-  return <CtxProvider><Outlet /></CtxProvider>;
+  return <CtxProvider><Outlet /><Splash /></CtxProvider>;
 }
 
 // Every module gets the same set of routes.
