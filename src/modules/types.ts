@@ -78,6 +78,8 @@ export interface TrainingModule {
   LibraryActions?: FC;
   /** Optional second view on the module page (gym: training diary). */
   Diary?: { label: string; Component: FC };
+  /** Optional notice at the top of the module page (gym: program does not fit your days). */
+  Notice?: FC;
   /** Records a new log sets, compared with everything before it. */
   records?(prev: SessionLog[], log: SessionLog): RecordItem[];
 }

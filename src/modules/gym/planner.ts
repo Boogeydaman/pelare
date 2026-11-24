@@ -3,6 +3,7 @@
 import { fmtDate, weekStart } from '../../core/format';
 import type { ExerciseResult, Goals, PlannedSession, Profile, SessionLog, StrengthItem } from '../../core/types';
 import type { ModuleCtx } from '../types';
+import { gymDaysOf } from '../common';
 import { EX, MUSCLES, MUSCLE_NAME, type Exercise, type Muscle, type Need } from './exercises';
 import { PROGRAMS, PROGRAM_BY_ID, type GymProgram, type SessionTemplate, type Slot } from './programs';
 
@@ -10,9 +11,14 @@ const ALL_NEEDS: Need[] = ['barbell', 'machine', 'cable', 'dumbbell', 'bench', '
 
 // ---------------------------------------------------------------- Rules used here (see docs/SPEC.md section 6)
 
-/** strength.weekly_sets: 10–20 hard sets per muscle and week [1][2]; minimum dose 4–6 [11]. */
-export function weeklyTarget(goal: Goals['gym']): number {
-  return goal === 'muscle' ? 14 : goal === 'stronger' ? 10 : 6;
+/**
+ * strength.weekly_sets: 10–20 hard sets per muscle and week [1][2]; minimum dose 4–6 [11].
+ * The goal sets the ceiling, the number of gym days what is realistic: about 3 hard sets per muscle
+ * and session, so 2 sessions aim for the minimum dose (6) instead of a target that can't be reached.
+ */
+export function weeklyTarget(goal: Goals['gym'], gymDays = 4): number {
+  const byGoal = goal === 'muscle' ? 14 : goal === 'stronger' ? 10 : 6;
+  return Math.max(4, Math.min(byGoal, gymDays * 3));
 }
 /** strength.session_cap: about 10 hard sets per muscle and session (H, [14]; Dr Mike: 10–12). */
 export const SESSION_CAP = 10;
@@ -236,7 +242,7 @@ export function build(ctx: ModuleCtx, tpl: SessionTemplate, opts: { minutes?: nu
   }
 
   const week = weekVolume(ctx);
-  const goal = weeklyTarget(ctx.profile.goals.gym);
+  const goal = weeklyTarget(ctx.profile.goals.gym, gymDaysOf(ctx.profile));
   const hit = [...new Set(items.flatMap((i) => EX[i.id]?.primary ?? []))];
   const low = hit.filter((m) => week[m] < goal).sort((a, b) => week[a] - week[b]).slice(0, 2);
   const tired = notRecovered(ctx).filter((m) => hit.includes(m));
@@ -307,7 +313,7 @@ export function similar(id: string, eq: Set<Need>): Exercise[] {
  * minus sessions done recently (so the mix keeps rotating), plus a little for the longest-unused.
  */
 export function rollingNext(ctx: ModuleCtx, program: GymProgram): { tpl: SessionTemplate; index: number } {
-  const goal = weeklyTarget(ctx.profile.goals.gym);
+  const goal = weeklyTarget(ctx.profile.goals.gym, gymDaysOf(ctx.profile));
   const week = weekVolume(ctx);
   const tired = new Set(notRecovered(ctx));
   const gym = ctx.logs.filter((l) => l.module === 'gym' && !l.type.startsWith('core')).sort((a, b) => b.startedAt.localeCompare(a.startedAt));

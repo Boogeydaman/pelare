@@ -46,6 +46,7 @@ export function ModuleHome({ m }: { m: TrainingModule }) {
         </div>
       </header>
 
+      {m.Notice && <m.Notice />}
       {m.Diary && (
         <div className="mt-6">
           <Segmented label="Vy" value={diary ? 'diary' : 'overview'} onChange={(v) => setParams(v === 'diary' ? { vy: 'dagbok' } : {}, { replace: true })}

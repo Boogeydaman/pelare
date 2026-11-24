@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { EX } from '../modules/gym/exercises';
-import { e1rm, plateauTip, similar, swapItem, type Done } from '../modules/gym/planner';
+import { e1rm, plateauTip, similar, swapItem, weeklyTarget, type Done } from '../modules/gym/planner';
+import { splitWarning } from '../modules/gym/diary';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
 import { paceZones, riegel, zonePosition } from '../modules/run/pace';
 import type { ModuleCtx } from '../modules/types';
@@ -108,5 +109,24 @@ describe('Bålpass', () => {
     expect(core(v)).toBe(false);
     const gym = MODULE_LIST.find((m) => m.id === 'gym')!;
     expect(gym.weekly(c(logs)).done).toBe(0);
+  });
+});
+
+describe('Få gympass i veckan', () => {
+  it('veckomålet per muskel följer antalet pass, aldrig under minsta dosen', () => {
+    expect(weeklyTarget('muscle', 2)).toBe(6);
+    expect(weeklyTarget('stronger', 2)).toBe(6);
+    expect(weeklyTarget('muscle', 4)).toBe(12);
+    expect(weeklyTarget('muscle', 5)).toBe(14);
+    expect(weeklyTarget('maintain', 1)).toBe(4);
+  });
+
+  it('varnar när ett 4-dagarsprogram körs två dagar och föreslår helkropp', () => {
+    const p = (programId: string, gymDays: number): Profile => ({ ...profile, gymDays, enrollments: { ...profile.enrollments, gym: { programId, startedAt: '2026-11-01T10:00:00' } } });
+    expect(splitWarning(p('allmuscles', 2))?.to).toBe('minimal');
+    expect(splitWarning(p('upperlower', 2))?.to).toBe('minimal');
+    expect(splitWarning(p('allmuscles', 4))).toBeNull();
+    expect(splitWarning(p('minimal', 2))).toBeNull();
+    expect(splitWarning({ ...p('allmuscles', 2), places: ['home'], homeEquipment: ['dumbbell'] })?.to).toBe('home_db');
   });
 });

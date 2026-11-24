@@ -4,6 +4,8 @@ import { ArrowDownRight, ArrowRight, ArrowUpRight, ChevronDown } from 'lucide-re
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useCtx } from '../../core/ctx';
+import { saveProfile } from '../../core/db';
+import { PROGRAM_BY_ID } from './programs';
 import { fmtDate } from '../../core/format';
 import { Empty, Section } from '../../shared/layout/page';
 import { color } from '../../shared/ui/kit';
@@ -66,7 +68,7 @@ export function WeekExplain({ ctx }: { ctx: ModuleCtx }) {
   const [open, setOpen] = useState(false);
   const program = programOf(ctx.profile);
   const next = nextTemplate(ctx, program).tpl;
-  const goal = weeklyTarget(ctx.profile.goals.gym);
+  const goal = weeklyTarget(ctx.profile.goals.gym, gymDaysOf(ctx.profile));
   const v = weekVolume(ctx);
   const under = MUSCLES.filter((m) => v[m] < goal);
   const tired = notRecovered(ctx);
@@ -79,7 +81,7 @@ export function WeekExplain({ ctx }: { ctx: ModuleCtx }) {
       ? `Rullande: av alla ${program.sessions.length} gympass väljs det som fyller veckans luckor bäst – muskler under veckomålet räknas upp, trötta muskler och pass du nyss kört räknas ner. Nästa: ${next.title}.`
       : `${program.name}: passen roterar i ordning (${program.sessions.map((s) => s.title).join(' → ')}). Nästa: ${next.title}.`],
     ['Antal pass', `${days} gympass i veckan (ditt val), ${done} gjorda. Löpningen har ${runsPerWeekOf(ctx.profile)} pass, så veckan blir ${days + runsPerWeekOf(ctx.profile)} pass totalt.`],
-    ['Volym per muskel', `Målet är ungefär ${goal} hårda set per muskel och vecka för ditt mål. ${under.length ? `Under målet just nu: ${under.slice(0, 6).map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}${under.length > 6 ? ' med flera' : ''}.` : 'Alla muskler har nått målet den här veckan.'}`],
+    ['Volym per muskel', `Målet är ungefär ${goal} hårda set per muskel och vecka – anpassat till ditt mål och dina ${days} gympass. ${under.length ? `Under målet just nu: ${under.slice(0, 6).map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}${under.length > 6 ? ' med flera' : ''}.` : 'Alla muskler har nått målet den här veckan.'}`],
     ['Återhämtning', tired.length ? `Tränade senaste dygnen och fortfarande trötta: ${tired.map((m) => MUSCLE_NAME[m].toLowerCase()).join(', ')}. Coachen undviker tunga pass för dem och håller tunga ben och hård löpning minst ett dygn isär.` : 'Inga muskler är tränade hårt de senaste dygnen – inget hindrar ett tungt pass.'],
     ['Plats och utrustning', `Du tränar ${place}. Övningar som kräver något du inte har där byts automatiskt mot en som tränar samma muskler${eq.size ? '' : ' i kroppsvikt'}.`],
     ['Vikter', 'Dubbel progression: när alla set når toppen av repintervallet ökar vikten ett steg. Två tunga pass i rad sänker vikten 7,5 %, och tre pass utan framsteg ger ett platåtips.'],
@@ -111,5 +113,37 @@ export function WeekExplain({ ctx }: { ctx: ModuleCtx }) {
 /** On the gym program page. */
 export function GymProgramExtra() {
   const ctx = useCtx();
-  return ctx ? <WeekExplain ctx={ctx} /> : null;
+  return ctx ? <><GymSplitNotice /><WeekExplain ctx={ctx} /></> : null;
+}
+
+/**
+ * Split programs (upper/lower) with only two gym days a week train each muscle once a week.
+ * Twice a week gives more for the same work (strength.frequency, [1]), so suggest a full-body program.
+ */
+export function splitWarning(profile: ModuleCtx['profile']): { text: string; to: string; toName: string } | null {
+  const prog = programOf(profile);
+  const days = gymDaysOf(profile);
+  if (days > 2 || !['upperlower', 'allmuscles'].includes(prog.id)) return null;
+  const to = profile.places.includes('gym') ? 'minimal' : profile.homeEquipment.includes('dumbbell') ? 'home_db' : 'bodyweight';
+  const toName = PROGRAM_BY_ID[to]?.name ?? 'ett helkroppsprogram';
+  return { to, toName, text: `${prog.name} är byggt för 4 pass i veckan. Med ${days} pass tränas varje muskel bara en gång i veckan – två gånger ger mer för samma jobb. ${toName} tränar hela kroppen varje pass.` };
+}
+
+export function GymSplitNotice() {
+  const ctx = useCtx();
+  if (!ctx) return null;
+  const w = splitWarning(ctx.profile);
+  if (!w) return null;
+  const p = ctx.profile;
+  return (
+    <section className="mt-6 rounded-[24px] border-2 px-5 py-4" style={{ borderColor: color('gym', 0.5) }}>
+      <div className="text-[13px] font-medium" style={{ color: color('gym') }}>Programmet passar inte dina 2 pass</div>
+      <p className="mt-1 text-[15px] leading-snug">{w.text}</p>
+      <button onClick={() => saveProfile({ ...p, enrollments: { ...p.enrollments, gym: { programId: w.to, startedAt: new Date().toISOString() } } })}
+        className="mt-3 flex h-12 w-full items-center justify-center rounded-full text-[15px] font-semibold" style={{ background: color('gym'), color: 'rgb(var(--onpillar))' }}>
+        Byt till {w.toName}
+      </button>
+      <p className="mt-2 text-[12px] text-ink2">Dina vikter och loggade pass följer med. Vill du hellre köra fler pass: ändra Gympass per vecka i Inställningar.</p>
+    </section>
+  );
 }

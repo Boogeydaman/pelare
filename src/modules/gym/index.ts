@@ -9,7 +9,7 @@ import { PROGRAMS, PROGRAM_BY_ID } from './programs';
 import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } from './planner';
 import { HOWTO } from './howto';
 import { GymPlayer } from './Player';
-import { GymDiary, GymProgramExtra } from './diary';
+import { GymDiary, GymProgramExtra, GymSplitNotice } from './diary';
 import { coreSession } from './core';
 import { GymLibraryActions, isCustom } from './custom';
 import { Link } from 'react-router-dom';
@@ -117,7 +117,7 @@ export const gym: TrainingModule = {
       id, label: `${EX[id].name}, beräknat max`, value: fmt1(s[s.length - 1]), unit: 'kg', series: s,
       change: s.length > 1 && Math.abs(s[s.length - 1] - s[0]) >= 0.5 ? `${s[s.length - 1] >= s[0] ? '+' : ''}${fmt1(s[s.length - 1] - s[0])} kg sedan start` : undefined,
     }));
-    const goal = weeklyTarget(ctx.profile.goals.gym);
+    const goal = weeklyTarget(ctx.profile.goals.gym, gymDaysOf(ctx.profile));
     const v = weekVolume(ctx);
     const atGoal = MUSCLES.filter((m) => v[m] >= goal).length;
     const sets = weeklySeries(logs, ctx.now, 6, (l) => (l.data?.kind === 'strength' ? l.data.exercises.reduce((a, e) => a + e.sets.length, 0) : 0));
@@ -146,5 +146,6 @@ export const gym: TrainingModule = {
   LibraryActions: GymLibraryActions,
   Diary: { label: 'Dagbok', Component: GymDiary },
   ProgramExtra: GymProgramExtra,
+  Notice: GymSplitNotice,
   records: gymRecords,
 };
