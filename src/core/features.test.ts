@@ -3,10 +3,11 @@ import { EX } from '../modules/gym/exercises';
 import { e1rm, plateauTip, similar, swapItem, weeklyTarget, type Done } from '../modules/gym/planner';
 import { splitWarning } from '../modules/gym/diary';
 import { hipTemplate, hipAdjust } from '../modules/gym/hip';
-import { gymDaysOf, rehabPhase, runsPerWeekOf } from '../modules/common';
+import { gymDaysOf, rehabCautious, rehabPhase, runsPerWeekOf, waitingFor } from '../modules/common';
 import { stretchOk } from '../modules/mobility/rehab';
-import { LESSONS, PHASE_INFO, lessonsFor } from '../rehab/content';
-import { inRehab } from '../rehab/state';
+import { CHAPTERS, PHASE_INFO, chaptersFor } from '../rehab/content';
+import { CRITERIA, HIP_TESTS, criterionByTest, latestTests, testDue } from '../rehab/criteria';
+import { inRehab, migratedPassed } from '../rehab/state';
 import { SOURCE } from './sources';
 import { build } from '../modules/gym/planner';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
@@ -147,29 +148,96 @@ describe('Efter höftprotes', () => {
   });
   const at = (p: Profile, logs: SessionLog[] = []): ModuleCtx => ({ ...ctx(logs), profile: p });
 
-  it('fasen följer veckorna efter operationen, och man kan stanna kvar', () => {
-    expect(rehabPhase(hip('2026-11-15'), NOW)).toBe(1);
-    expect(rehabPhase(hip('2026-10-20'), NOW)).toBe(2);
-    expect(rehabPhase(hip('2026-09-20'), NOW)).toBe(3);
-    expect(rehabPhase(hip('2026-07-01'), NOW)).toBe(4);
-    expect(rehabPhase(hip('2026-03-01'), NOW)).toBe(5);
+  it('utan kriterier följer fasen kalendern (gamla profiler), före operationen är det prehab', () => {
+    expect(rehabPhase(hip('2026-11-21'), NOW)).toBe(1);
+    expect(rehabPhase(hip('2026-11-15'), NOW)).toBe(2);
+    expect(rehabPhase(hip('2026-10-20'), NOW)).toBe(3);
+    expect(rehabPhase(hip('2026-09-20'), NOW)).toBe(4);
+    expect(rehabPhase(hip('2026-07-01'), NOW)).toBe(5);
     expect(rehabPhase(hip('2026-07-01', { holdPhase: 3 }), NOW)).toBe(3);
     expect(rehabPhase(hip('2026-07-01', { ended: true }), NOW)).toBeNull();
+    expect(rehabPhase(hip('2026-12-10'), NOW)).toBe(0);
   });
 
-  it('fas 1 är ett kort dagligt program utan stående övningar, och inga löppass', () => {
-    const p = hip('2026-11-15');
+  it('kriterierna styr fasen, och läkningen sätter ett golv', () => {
+    const d = '2026-11-01';
+    expect(rehabPhase(hip('2026-09-20', { passed: {} }), NOW)).toBe(1);
+    expect(rehabPhase(hip('2026-09-20', { passed: { 1: d } }), NOW)).toBe(2);
+    expect(rehabPhase(hip('2026-09-20', { passed: { 1: d, 2: d, 3: d } }), NOW)).toBe(4);
+    // 3 weeks after surgery: criteria for phase 3 met, but phase 4 not before week 6
+    const early = hip('2026-11-01', { passed: { 1: d, 2: d, 3: d } });
+    expect(rehabPhase(early, NOW)).toBe(3);
+    expect(waitingFor(early, NOW)).toEqual({ phase: 4, week: 6 });
+    // a gap in the criteria stops there
+    expect(rehabPhase(hip('2026-07-01', { passed: { 1: d, 3: d } }), NOW)).toBe(2);
+  });
+
+  it('gamla profiler behåller sin fas när kriterierna införs', () => {
+    const old = hip('2026-09-20');
+    const passed = migratedPassed(old, NOW)!;
+    expect(Object.keys(passed).map(Number)).toEqual([1, 2, 3]);
+    expect(rehabPhase({ ...old, rehab: { ...old.rehab!, passed } }, NOW)).toBe(4);
+    expect(migratedPassed(hip('2026-09-20', { passed: {} }), NOW)).toBeNull();
+  });
+
+  it('före operationen: prehab 3 gånger i veckan och fria stretchar', () => {
+    const p = hip('2026-12-20');
+    const { tpl } = hipTemplate(at(p));
+    expect(tpl.type.startsWith('hip0_')).toBe(true);
+    expect(gymDaysOf(p)).toBe(3);
+    expect(runsPerWeekOf(p)).toBe(3);
+    expect(rehabCautious(p, NOW)).toBe(false);
+  });
+
+  it('fas 1 är ett kort program flera gånger om dagen, och inga löppass', () => {
+    const p = hip('2026-11-21');
     const { tpl } = hipTemplate(at(p));
     expect(tpl.slots.map((x) => x.ex)).toContain('ankle_pumps');
+    expect(tpl.slots.map((x) => x.ex)).toContain('supine_abd_slide');
     expect(gymDaysOf(p)).toBe(7);
     expect(runsPerWeekOf(p)).toBe(0);
   });
 
-  it('sidosnitt: inga benlyft åt sidan de första 6 veckorna', () => {
-    const p = hip('2026-10-20', { approach: 'sido' });
-    const all = [0, 1].flatMap((k) => hipTemplate(at(p, Array.from({ length: k }, (_, i) => ({ id: `h${i}`, module: 'gym', type: 'hip2_a', title: '', startedAt: '2026-11-20T10:00:00', minutes: 20 })))).tpl.slots.map((x) => x.ex));
-    expect(all).not.toContain('standing_hip_abd');
-    expect(all).not.toContain('sidelying_abd');
+  const both = (p: Profile, type: string) => [0, 1].flatMap((k) => hipTemplate(at(p, Array.from({ length: k }, (_, i) => ({ id: `h${i}`, module: 'gym' as const, type, title: '', startedAt: '2026-11-20T10:00:00', minutes: 20 })))).tpl.slots.map((x) => x.ex));
+
+  it('sidosnitt: abduktion utan motstånd tills kirurgen gett klartecken', () => {
+    const all = both(hip('2026-10-20', { approach: 'sido' }), 'hip3_a');
+    for (const ex of ['band_abd', 'sidelying_abd', 'cable_hip_abd']) expect(all).not.toContain(ex);
+    expect(all).toContain('standing_hip_abd');
+    expect(both(hip('2026-10-20', { approach: 'sido', abdCleared: true }), 'hip3_a')).toContain('sidelying_abd');
+  });
+
+  it('partiell belastning: övningar på två ben', () => {
+    const all = both(hip('2026-10-20', { weightBearing: 'partiell' }), 'hip3_a');
+    for (const ex of ['lateral_step_up', 'single_leg_stance', 'glute_bridge']) if (ex !== 'glute_bridge') expect(all).not.toContain(ex);
+    expect(all).toContain('mini_squat');
+  });
+
+  it('tung styrka tidigt: 4 × 5 i fas 3', () => {
+    const { tpl } = hipTemplate(at(hip('2026-10-20', { heavy: true })));
+    const lp = tpl.slots.find((x) => x.ex === 'leg_press');
+    expect(lp?.sets).toBe(4);
+    expect(lp?.reps).toEqual([5, 5]);
+  });
+
+  it('hemma utan maskiner byts benpress mot knäböj', () => {
+    const p = { ...hip('2026-10-20'), places: ['home' as const] };
+    const c: ModuleCtx = { ...at(p), checkin: { date: '2026-11-22', feeling: 'okej', minutes: 60, place: 'home' } };
+    const ex = hipTemplate(c).tpl.slots.map((x) => x.ex);
+    expect(ex).not.toContain('leg_press');
+    expect(ex).toContain('box_squat');
+  });
+
+  it('kriterier med test bockas i av testresultatet', () => {
+    const t = (testId: string, value: number, date: string) => ({ id: testId + date, module: 'gym' as const, testId, value, unit: '', date });
+    const latest = latestTests([t('hip_stance', 6, '2026-11-01'), t('hip_stance', 14, '2026-11-20')]);
+    const c = CRITERIA[3].find((x) => x.id === 'enben')!;
+    expect(criterionByTest(c, latest)).toBe(true);
+    expect(criterionByTest(CRITERIA[3].find((x) => x.id === 'uppres')!, latest)).toBeUndefined();
+    expect(testDue(3, [t('hip_stance', 14, '2026-11-20')], NOW)).toBe(false);
+    expect(testDue(3, [t('hip_stance', 14, '2026-10-20')], NOW)).toBe(true);
+    expect(testDue(1, [], NOW)).toBe(false);
+    for (const x of Object.values(CRITERIA).flat()) if (x.test) expect(HIP_TESTS.some((h) => h.id === x.test!.id), x.id).toBe(true);
   });
 
   it('smärta över 5 förra passet ger ett lättare pass', () => {
@@ -196,13 +264,29 @@ describe('Efter höftprotes', () => {
     expect(v.addOns.some((a) => a.label === 'Djurrörelser')).toBe(false);
   });
 
-  it('rehabläget: kursen låses upp fas för fas och alla källor finns', () => {
-    expect(lessonsFor(1).every((l) => l.phase === 1)).toBe(true);
-    expect(lessonsFor(5).length).toBe(LESSONS.length);
-    for (const l of LESSONS) for (const n of l.sources) expect(SOURCE[n], `${l.id} → ${n}`).toBeDefined();
-    for (let ph = 1; ph <= 5; ph++) expect(PHASE_INFO[ph].goals.length).toBeGreaterThanOrEqual(3);
+  it('läroboken: alla källor finns, tabellerna är hela och kapitlen följer faserna', () => {
+    expect(chaptersFor(0).every((c) => c.phase === 0)).toBe(true);
+    expect(chaptersFor(5).length).toBe(CHAPTERS.length);
+    expect(new Set(CHAPTERS.map((c) => c.id)).size).toBe(CHAPTERS.length);
+    expect(CHAPTERS.length).toBeGreaterThanOrEqual(20);
+    for (const c of CHAPTERS) {
+      for (const n of c.sources) expect(SOURCE[n], `${c.id} → ${n}`).toBeDefined();
+      const text = JSON.stringify(c.sections) + c.lead;
+      for (const m of text.matchAll(/\[(\d+)\]/g)) expect(c.sources, `${c.id} citerar [${m[1]}]`).toContain(Number(m[1]));
+      for (const s of c.sections) if (s.table) for (const r of s.table.rows) expect(r.length, `${c.id}: ${r[0]}`).toBe(s.table.head.length);
+      expect(c.key.length).toBeGreaterThanOrEqual(2);
+    }
+    for (let ph = 0; ph <= 5; ph++) expect(PHASE_INFO[ph].goals.length).toBeGreaterThanOrEqual(3);
     expect(inRehab(hip('2026-11-15'), NOW)).toBe(true);
+    expect(inRehab(hip('2026-12-15'), NOW)).toBe(true);
     expect(inRehab(hip('2026-11-15', { ended: true }), NOW)).toBe(false);
+  });
+
+  it('mer svullet på morgonen ger ett lättare pass', () => {
+    const p = hip('2026-10-20');
+    const c: ModuleCtx = { ...at(p), checkin: { date: '2026-11-22', feeling: 'okej', minutes: 60, place: 'gym', swelling: true } };
+    const plan = hipAdjust(c, build(c, hipTemplate(c).tpl, { reasons: [''] }));
+    expect(plan.reasons[0].text).toMatch(/svullen/);
   });
 
   it('höften ondare på morgonen ger ett lättare pass', () => {

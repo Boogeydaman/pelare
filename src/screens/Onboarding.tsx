@@ -2,7 +2,8 @@ import { ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { saveProfile } from '../core/db';
 import { useNavigate } from 'react-router-dom';
-import type { Equip, Goals, HipApproach, HipRehab, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
+import type { Equip, Goals, HipRehab, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
+import { HipDetails } from '../modules/gym/HipRehab';
 import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
 import { RUN_PER_WEEK, gymProgramFor } from '../modules/common';
 import { InstallCard } from '../shared/ui/InstallCard';
@@ -53,8 +54,7 @@ export function Onboarding() {
   // Training after a hip replacement: asked first; then the date, side and approach decide the programme.
   const [hip, setHip] = useState(false);
   const [surgery, setSurgery] = useState('');
-  const [side, setSide] = useState<HipRehab['side']>('höger');
-  const [approach, setApproach] = useState<HipApproach>('okand');
+  const [info, setInfo] = useState<Partial<HipRehab>>({ side: 'höger', approach: 'okand', restrictions: 'okand', weightBearing: 'full' });
   const steps: Step[] = hip
     ? ['welcome', 'rehab', 'rehabinfo', 'place', 'health']
     : ['welcome', 'rehab', 'gym', 'run', 'mobility', 'days', 'place', 'health'];
@@ -68,7 +68,7 @@ export function Onboarding() {
     const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
     const profile: Profile = {
       goals: { ...goals, run: runGoal, mobility: legacy }, daysPerWeek: gymDays + (RUN_PER_WEEK[runGoal] ?? 3), gymDays: hip ? 3 : gymDays, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
-      ...(hip ? { rehab: { kind: 'hip' as const, surgery, side, approach } } : {}),
+      ...(hip ? { rehab: { side: 'höger' as const, approach: 'okand' as const, ...info, kind: 'hip' as const, surgery, passed: {} } } : {}),
       enrollments: {
         gym: { programId: gymProgram, startedAt: now },
         run: { programId: runGoal, startedAt: now },
@@ -113,7 +113,7 @@ export function Onboarding() {
         {step === 'rehab' && (
           <Q title="Råkar du heta Anders och behöver specialanpassad träning efter din höftledsoperation?">
             <OptionList value={hip ? 'yes' : 'no'} onChange={(v) => setHip(v === 'yes')} options={[
-              { value: 'yes', label: 'Ja, träning efter höftprotes', hint: 'Programmet följer veckorna efter operationen – från de första dagarna till tung styrketräning' },
+              { value: 'yes', label: 'Ja, träning efter höftprotes', hint: 'Förberedelser före operationen, fem faser efteråt med kriterier, tester och en lärobok' },
               { value: 'no', label: 'Nej, vanlig träning', hint: 'Gym, löpning och rörlighet' },
             ]} />
           </Q>
@@ -121,19 +121,12 @@ export function Onboarding() {
         {step === 'rehabinfo' && (
           <Q kicker="Höftprotes" kind="gym" title="Berätta lite om operationen">
             <label className="block">
-              <span className="mb-1 block text-[14px] text-ink2">Datum för operationen</span>
-              <input type="date" value={surgery} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setSurgery(e.target.value)} aria-label="Datum för operationen"
+              <span className="mb-1 block text-[14px] text-ink2">Datum för operationen – har du inte opererats än, välj det planerade datumet så får du förberedelser</span>
+              <input type="date" value={surgery} onChange={(e) => setSurgery(e.target.value)} aria-label="Datum för operationen"
                 className="h-12 w-full rounded-2xl bg-ink/[0.06] px-4 text-[17px] outline-none focus:ring-2 focus:ring-ink" />
             </label>
-            <div className="mt-6 mb-1 text-[14px] text-ink2">Vilken höft?</div>
-            <OptionList value={side} onChange={setSide} options={[{ value: 'höger', label: 'Höger' }, { value: 'vänster', label: 'Vänster' }]} />
-            <div className="mt-6 mb-1 text-[14px] text-ink2">Hur opererades du? Står ofta i utskrivningspapperen.</div>
-            <OptionList value={approach} onChange={setApproach} options={[
-              { value: 'bakre', label: 'Bakre snitt', hint: 'Posteriort – snittet på baksidan/sidan av höften' },
-              { value: 'sido', label: 'Sidosnitt', hint: 'Lateralt eller anterolateralt' },
-              { value: 'framre', label: 'Främre snitt', hint: 'Anteriort – snittet på framsidan' },
-              { value: 'okand', label: 'Vet inte', hint: 'Appen väljer försiktiga övningar' },
-            ]} />
+            <div className="mt-6"><HipDetails r={info} set={(x) => setInfo({ ...info, ...x })} compact /></div>
+            <p className="mt-6 text-[14px] text-ink2">Fixation och fler detaljer kan du lägga till under Inställningar. Allt står i operationsberättelsen i 1177 Journalen.</p>
             <p className="mt-6 rounded-2xl bg-ink/[0.06] p-4 text-[14px] leading-snug">Appen ersätter inte din kirurg eller fysioterapeut. Följ alltid de restriktioner och det program du fått från dem – Pelare hjälper dig att hålla igång och bygga vidare.</p>
           </Q>
         )}

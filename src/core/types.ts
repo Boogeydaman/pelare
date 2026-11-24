@@ -42,18 +42,32 @@ export interface Profile {
 }
 
 export type HipApproach = 'bakre' | 'sido' | 'framre' | 'okand';
+export type HipFixation = 'cementerad' | 'ocementerad' | 'hybrid' | 'omvand' | 'okand';
+/** Walking aid, stepped down when you walk without a limp: rollator → two crutches → one → cane → none. */
+export type HipAid = 'rollator' | 'tva' | 'en' | 'kapp' | 'ingen';
 export interface HipRehab {
   kind: 'hip';
-  surgery: string; // date of the operation, YYYY-MM-DD
+  surgery: string; // date of the operation, YYYY-MM-DD (a future date = before the operation, prehab)
   side: 'höger' | 'vänster';
   approach: HipApproach;
-  holdPhase?: number; // stay in this phase even if time says the next one
+  fixation?: HipFixation;
+  capsule?: 'ja' | 'nej' | 'okand'; // posterior approach: capsule repaired
+  dualMobility?: boolean;
+  restrictions?: 'inga' | 'ordinerade' | 'okand'; // movement restrictions from the hospital
+  weightBearing?: 'full' | 'partiell';
+  abdCleared?: boolean; // lateral approach: cleared for abduction against resistance
+  heavy?: boolean; // heavy strength early (4×5, Husby/Winther) in phase 3
+  aid?: HipAid;
+  /** Phase n's exit criteria confirmed (date). The phase follows these – not the calendar. */
+  passed?: Record<number, string>;
+  prep?: string[]; // done items on the before-surgery checklist
+  holdPhase?: number; // stay in this phase even if the criteria say the next one
   cleared?: boolean; // surgeon/physio has cleared free training (running etc.)
   ended?: boolean; // back to normal training
   read?: string[]; // lessons read in the rehab course
 }
 
-export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where; hipPain?: number }
+export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where; hipPain?: number; swelling?: boolean }
 
 // ---------- Plans ----------
 

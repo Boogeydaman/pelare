@@ -99,7 +99,7 @@ export function ProgressPage({ m }: { m: TrainingModule }) {
   const testOpen = params.get('test') === '1';
   if (!ctx) return null;
   const metrics = m.metrics(ctx);
-  const tests = ctx.tests.filter((t) => t.module === m.id);
+  const tests = ctx.tests.filter((t) => t.module === m.id && !t.testId.startsWith('hip_'));
 
   return (
     <Page kicker={m.name} kind={m.id} title="Framsteg" back={`/${m.slug}`}>

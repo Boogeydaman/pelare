@@ -6,9 +6,10 @@ import type { Profile } from '../../core/types';
 import { rehabCautious, rehabPhase } from '../common';
 
 const ALWAYS = ['upper_trap', 'head_roll', 'chest_opener', 'doorway', 'cross_body', 'wall_slide', 'side_stretch', 'calf_wall'];
+// Phase 4 starts after ~6 weeks (restrictions usually end), phase 5 after ~3 months.
 const FROM_PHASE: Record<string, number> = {
-  supine_ham: 3, cat_cow: 3, hip_flexor: 3, knee_wall: 3, lat_stretch: 3,
-  forward_fold: 4, childs_pose: 4, open_book: 4, worlds_greatest: 4, half_split: 4, elephant_walk: 4, down_dog: 4, seated_twist: 4,
+  supine_ham: 4, cat_cow: 4, hip_flexor: 4, knee_wall: 4, lat_stretch: 4,
+  forward_fold: 5, childs_pose: 5, open_book: 5, worlds_greatest: 5, half_split: 5, elephant_walk: 5, down_dog: 5, seated_twist: 5,
 };
 
 export function stretchOk(profile: Profile, id: string, now = new Date()): boolean {

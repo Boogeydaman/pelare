@@ -1,7 +1,7 @@
 // Du: your rehab at a glance – sessions, walks, lessons and how the pain has gone.
 import { useCtx } from '../core/ctx';
 import { weekStart } from '../core/format';
-import { LESSONS, REHAB, rehabTint } from './content';
+import { CHAPTERS, REHAB, rehabTint } from './content';
 import { isHipSession } from '../modules/gym/hip';
 import { inRehab } from './state';
 
@@ -13,14 +13,14 @@ export function RehabStats() {
   const thisWeek = rehab.filter((l) => new Date(l.startedAt) >= week).length;
   const walkMin = ctx.logs.filter((l) => l.type === 'walk' && new Date(l.startedAt) >= week).reduce((a, l) => a + l.minutes, 0);
   const pains = rehab.filter((l) => l.pain !== undefined).slice(0, 10).reverse().map((l) => l.pain!);
-  const read = (ctx.profile.rehab?.read ?? []).length;
+  const read = CHAPTERS.filter((c) => (ctx.profile.rehab?.read ?? []).includes(c.id)).length;
   return (
     <section className="mt-6 rounded-[22px] px-5 py-4" style={{ background: rehabTint(0.08) }}>
       <div className="text-[13px] font-semibold" style={{ color: REHAB }}>Din rehab</div>
       <div className="num mt-2 grid grid-cols-3 gap-3">
         <div><div className="text-[24px] font-semibold leading-tight">{thisWeek}</div><div className="text-[12px] text-ink2">rehabpass i veckan · {rehab.length} totalt</div></div>
         <div><div className="text-[24px] font-semibold leading-tight">{walkMin}</div><div className="text-[12px] text-ink2">min promenad i veckan</div></div>
-        <div><div className="text-[24px] font-semibold leading-tight">{read}/{LESSONS.length}</div><div className="text-[12px] text-ink2">lektioner lästa</div></div>
+        <div><div className="text-[24px] font-semibold leading-tight">{read}/{CHAPTERS.length}</div><div className="text-[12px] text-ink2">kapitel lästa</div></div>
       </div>
       {pains.length > 1 && (
         <div className="mt-4">

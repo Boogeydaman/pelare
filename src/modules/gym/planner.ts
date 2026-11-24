@@ -8,7 +8,8 @@ import { hipTemplate } from './hip';
 import { EX, MUSCLES, MUSCLE_NAME, type Exercise, type Muscle, type Need } from './exercises';
 import { PROGRAMS, PROGRAM_BY_ID, type GymProgram, type SessionTemplate, type Slot } from './programs';
 
-const ALL_NEEDS: Need[] = ['barbell', 'machine', 'cable', 'dumbbell', 'bench', 'pullup_bar', 'dip_bars', 'band'];
+import { canDo, equipmentAt } from './equipment';
+export { canDo, equipmentAt };
 
 // ---------------------------------------------------------------- Rules used here (see docs/SPEC.md section 6)
 
@@ -30,14 +31,6 @@ const RECOVERY_H = 44;
 
 // ---------------------------------------------------------------- Equipment
 
-export function equipmentAt(profile: Profile, place: 'gym' | 'home' | 'travel'): Set<Need> {
-  if (place === 'gym') return new Set(ALL_NEEDS);
-  if (place === 'travel') return new Set();
-  const map: Record<string, Need> = { dumbbell: 'dumbbell', kettlebell: 'dumbbell', band: 'band', pullup_bar: 'pullup_bar', bench: 'bench' };
-  return new Set(profile.homeEquipment.map((e) => map[e]).filter(Boolean));
-}
-
-export const canDo = (ex: Exercise, eq: Set<Need>) => ex.needs.every((n) => eq.has(n));
 
 /** The exercise itself if possible, otherwise the first substitute that fits the equipment. */
 export function resolve(id: string, eq: Set<Need>, seen = new Set<string>()): Exercise | null {

@@ -1,4 +1,4 @@
-import { BookOpen, CircleUser, ClipboardList, Sun } from 'lucide-react';
+import { BookOpen, CircleUser, ClipboardList, Gauge, Sun } from 'lucide-react';
 import { useCtx } from '../../core/ctx';
 import { inRehab } from '../../rehab/state';
 import { useEffect } from 'react';
@@ -17,6 +17,7 @@ const TABS = [
 const REHAB_TABS = [
   { to: '/idag', label: 'I dag', icon: Sun, kind: undefined },
   { to: '/rehab/plan', label: 'Plan', icon: ClipboardList, kind: undefined },
+  { to: '/rehab/tester', label: 'Tester', icon: Gauge, kind: undefined },
   { to: '/rehab/las', label: 'Lär dig', icon: BookOpen, kind: undefined },
   { to: '/du', label: 'Du', icon: CircleUser, kind: undefined },
 ];

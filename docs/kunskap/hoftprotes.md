@@ -1,30 +1,42 @@
-# Träning efter höftprotes – underlag (2026-11-24)
+# Träning efter höftprotes – underlag (uppdaterat 2026-11-24)
 
-Rehabläget väljs i introt ("Råkar du heta Anders …") eller under Inställningar. Programmet följer
-veckorna efter operationen; kirurgens och fysioterapeutens instruktioner går alltid först.
+Rehabläget väljs i introt ("Råkar du heta Anders …") eller under Inställningar. Sedan 2026-11-24 bygger det på
+användarens forskningsrapport *Rehabilitering efter total höftprotes: en evidensbaserad guide i fem faser*
+(källa 49, med primärstudierna som källor 50–75 i `src/core/sources.ts`). Sjukhusets och kirurgens besked går alltid först.
 
-## Faser i appen
-| Fas | Veckor | Gym (pass/v) | Promenader/v | Innehåll |
+## Faser – kriteriestyrda
+Man går vidare när kriterierna för fasen är uppfyllda (bockas i på I dag, testresultat bockar i automatiskt),
+inte efter kalendern. Läkningen sätter ett golv (`min`): fas 3 tidigast v 2, fas 4 tidigast v 6, fas 5 tidigast v 12.
+Gamla profiler utan `passed` behåller kalenderns fas och migreras till kriterier vid första besöket.
+
+| Fas | Normal tid | Pass/v | Kärna | Kriterier för att gå vidare |
 |---|---|---|---|---|
-| 1 Första veckorna | 0–3 | 7 (kort, dagligt) | i passet | fotpumpar, lårspänning, knip sätet, hälglidning, knästräck över rulle |
-| 2 Rörelse och gång | 3–6 | 5 | i passet | höftlyft, uppresning från stol, stående höftböjning/-sträckning/-abduktion, tåhävning, lågt steg |
-| 3 Bygga styrka | 6–12 | 3 | 4 | förskjutna höftlyft, step-up, sidosteg ner, sidliggande benlyft, raka benlyft, bandgång, kort sidoplanka |
-| 4 Tillbaka till styrketräning | 12–26 | 3 | 4 | enbens höftlyft, goblet squat, step-up med vikt, utfallsböj, rumänsk marklyft, benspark/bencurl, överkropp |
-| 5 Långsiktig styrka | 26+ | ditt val | 3 | videons exempel: utfallsböj, RDL, sidosteg ner, höftböjning med vikt, höftlyft, goblet squat |
+| 0 Före operationen | datum framåt | 3 | BOA-liknande styrka, lär dig dag 1-övningar, kryckor, checklista (rökstopp, HbA1c, tänder, hud, kortison) | – |
+| 1 Sjukhus | dag 0–3 | dagligt, 2–3 ggr/dag | fotpumpar varje vaken timme, isometri 10×5–10 s, hälglidning, benglidning åt sidan, uppresning från hög stol | utskrivningskriterierna |
+| 2 Tidig hemfas | v 1–3 | dagligt, 1–2 ggr/dag | uppresning 3×8–12, stående abduktion/extension 3×10–15, brygga, tåhävning, miniknäböj ≤45°, lågt steg från v 2; 3–6 promenader à 5–15 min | läkt sår, ingen Trendelenburghalt med 1 krycka/käpp, minskande smärta |
+| 3 Funktion och styrka | v 3–6 | 4 | benpress 3–4×8–12 (60–75 %, 2–3 RIR), abduktion med band/maskin, brygga→enbens, step-up 15–20 cm, knäböj till bänk, enbensstående 3×30 s; cykel 10–20 min, gång 20–40 min/dag | gång utan hjälpmedel och halt, enbensstående ≥10 s, växelvis trappa, 30-s chair stand nära åldersnorm |
+| 4 Uppbyggnad | v 6–12 | 3 + 2–3 kondition | benpress enbens 4×5 (80–90 %), tung abduktion 4×5–8, höftsträckning, bulgarisk/utfall, reaktiv balans; kondition 20–45 min | abduktion LSI ≥80 %, 6MWT/40 m FPWT nära norm, ingen halt efter 30 min gång |
+| 5 Full funktion | 3–12 mån+ | 2–3 | periodiserad styrka, explosiv benpress/step-ups (RFD), WHO 150–300 min | LSI ≥90 %, livslångt underhåll |
 
-- **Snitt:** sidosnitt → inga aktiva benlyft åt sidan första 6 veckorna (ersätts med knip sätet), bakre/främre → restriktionstext på kortet.
-- **Smärta:** smärtmonitoreringsmodellen (Silbernagel/Thomeé): upp till 5/10 under passet ok om det lagt sig till nästa morgon. >5 → nästa pass ett set färre och lägsta reps.
-- **Rörlighet:** bara stretchar som passar fasen (överkropp och vader först, höftböjare/baksida från fas 3, djupa rotations- och splittlägen först efter klartecken).
-- **Kondition:** promenad/motionscykel i stället för löpning; löpprogram först efter klartecken.
-- **Inga djurrörelser eller bålpass-tillägg** innan klartecken.
+## Anpassningar (src/modules/gym/hip.ts)
+- **Sidosnitt:** abduktion mot motstånd (band, kabel, sidliggande, sidoplanka) ersätts av stående abduktion utan motstånd tills `abdCleared`.
+- **Partiell belastning:** enbensövningar ersätts av miniknäböj / knip sätet.
+- **Tung styrka tidigt (`heavy`):** benpress och abduktion 4×5 redan i fas 3 (Husby 2009, Winther 2018).
+- **Hemma utan maskiner:** benpress → goblet squat/knäböj till bänk, kabelabduktion → band/sidliggande, höftlyft med stång → enbens höftlyft.
+- **Restriktioner:** text per snitt och om de är ordinerade (bakre: undvik djup böj + inåt + inåtvridning; sido: skydda abduktorsenan; främre: undvik sträckning + utåtvridning).
+- **Smärtmonitorering:** ≤5/10 under passet, tillbaka till utgångsläget nästa morgon, ingen ökad svullnad. Ondare eller mer svullet på morgonen → ett set färre och lägsta reps.
 
-## Källor
-- Vårdförloppet höftledsartros, bilaga H (rehab vid proteskirurgi): kryckor → en krycka ~3 v → utan ~6 v, träningsperiod 8–12 v.
-- 1177 Höftledsoperation: träning från dag 0–1, blodproppsprofylax ~4 v, infektionskänslig led.
-- NICE NG157 (2020): råd om självständig rehab, handledd rehab vid behov, följ kirurgens restriktioner.
-- Crompton 2020 (SR, 6 900 pat., bakre snitt) och Cochrane 2016 (Smith): restriktioner har inte visats minska luxation – men följ kirurgen.
-- JAMA Netw Open 2021 (32 studier): evidensen för specifika postoperativa program är osäker.
-- Umbrella review 2021: de flesta tillbaka till låg/måttlig belastning (gång, vandring) efter 7–12 mån.
-- Mass General Brigham-protokollet: faser 1–6 och 6–12 v, motionscykel från v 3, step-ups v 3–6.
-- Region Dalarna: sidosnitt två kryckor 6 v och ingen aktiv abduktion; motionscykel, roddmaskin och kontrollerad gymträning efter 3 mån.
-- Fysioterapeut med egen höftprotes (YouTube, nivå D): progressioner för höftlyft, knäböj, step-up, marklyft, utfallsböj, sidomuskler och höftböjare; 3–5 övningar, 2–3 ggr/v, 2–3 set à 5–20 reps; promenad och cykel; rörlighet kommer med tid och styrka.
+## Övrigt i rehabläget
+- **Tester** (fliken Tester): 30-s chair stand, enbensstående, TUG, 40 m FPWT, 6MWT, trapptest, Trendelenburg, abduktions-LSI, flexion, HOOS JR, Oxford Hip Score – med instruktioner, riktvärden per fas, trend och påminnelse var 14:e dag.
+- **Gånghjälpmedel:** rollator → två kryckor → en → käpp → inget, steg för steg efter kriteriet "ingen halt".
+- **Tidslinje** från operationsdatum: stygn, bil, fysioterapeut, profylax, samliv, bassäng, arbete, restriktioner, uppföljning, golf/tandvård, jogging, ett och två år.
+- **Läroboken:** 23 kapitel i fem delar (grunderna, före och direkt efter, faserna, kroppen och vardagen, forskningen) med tabeller, "Det viktigaste" och källor. Testet kontrollerar att varje [n] i ett kapitel finns bland kapitlets källor.
+
+## Viktigaste evidensen (se rapporten för detaljer)
+- Restriktioner: Yadav 2026 (RCT 1 133 pat.), Korfitsen 2023 (8 835 pat.), Crompton 2020 – inga belägg för att rutinmässiga restriktioner minskar luxation.
+- Belastning: Huang 2023 (17 studier) – omedelbar fullbelastning säker även ocementerat.
+- Tung styrka: Husby 2009, Winther 2018 – mer styrka, säkert, likvärdig upplevd funktion.
+- Ledd vs hemträning: Wijnen, Mikkelsen 2014, AAOS – likvärdigt.
+- Kvarstående svaghet: Rasch 2009/2010 – abduktorer 15 % svagare efter 2 år.
+- Idrott: EHS-enkät 2020, Klein 2007, J Clin Med 2023 – låg evidens, allt friare.
+- Förbehåll: små styrkestudier, riktvärden ej validerade som fasgränser, gäller primärprotes vid artros.

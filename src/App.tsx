@@ -5,6 +5,7 @@ import { Splash } from './screens/Splash';
 import { RehabHome } from './rehab/RehabHome';
 import { RehabPlan } from './rehab/Plan';
 import { RehabCourse, RehabLesson } from './rehab/Course';
+import { RehabTests } from './rehab/Tests';
 import { inRehab } from './rehab/state';
 import { useCtx } from './core/ctx';
 import { Navigate, Outlet, RouterProvider, createHashRouter, type RouteObject } from 'react-router-dom';
@@ -61,6 +62,7 @@ const router = createHashRouter([
           { path: 'rehab/plan', element: <RehabPlan /> },
           { path: 'rehab/las', element: <RehabCourse /> },
           { path: 'rehab/las/:id', element: <RehabLesson /> },
+          { path: 'rehab/tester', element: <RehabTests /> },
           { path: 'du', element: <You /> },
           { path: 'historik', element: <HistoryPage /> },
           { path: 'logg/:id', element: <SessionDetail /> },

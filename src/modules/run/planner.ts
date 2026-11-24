@@ -266,12 +266,13 @@ export function walkSession(ctx: ModuleCtx): PlannedSession {
   const ph = rehabPhase(ctx.profile, ctx.now) ?? 5;
   const w = weeksSinceSurgery(ctx.profile, ctx.now);
   const done = runs(ctx.logs).filter((l) => l.type === 'walk' && ctx.now.getTime() - new Date(l.startedAt).getTime() < 14 * DAY).length;
-  const base = ph <= 2 ? 10 : ph === 3 ? 15 + Math.min(15, Math.floor((w - 6) * 2.5)) : ph === 4 ? 30 + Math.min(15, Math.floor((w - 12) * 1.2)) : 45;
+  // Research report: phase 2 walks of 5–15 min, phase 3 20–40 min, phase 4 cardio 20–45 min, phase 5 150–300 min a week.
+  const base = ph === 0 ? 25 : ph <= 2 ? 10 : ph === 3 ? 20 + Math.min(10, Math.max(0, Math.floor((w - 3) * 3))) : ph === 4 ? 25 + Math.min(20, Math.max(0, Math.floor((w - 6) * 3))) : 45;
   const m = Math.round(Math.min(ctx.checkin.minutes, base + (done >= 6 ? 5 : 0)));
-  return plan('walk', ph >= 3 && w >= 3 ? 'Promenad eller motionscykel' : 'Promenad', [seg('Promenad i lugn takt', 3, 'gå'), seg('Rask promenad', Math.max(5, m - 5), 'gå'), seg('Lugn takt hem', 2, 'gå')],
+  return plan('walk', ph === 0 || ph >= 3 ? 'Promenad eller motionscykel' : 'Promenad', [seg('Promenad i lugn takt', 3, 'gå'), seg('Rask promenad', Math.max(5, m - 5), 'gå'), seg('Lugn takt hem', 2, 'gå')],
     `${m} min promenad – eller cykel`, [
-      `Fas ${ph} efter höftoperationen: promenader och cykel är den bästa konditionsträningen nu.`,
+      ph === 0 ? 'Före operationen: cykel och promenader håller konditionen uppe – cykel är ofta skonsammare vid artros.' : `Fas ${ph} efter höftoperationen: ${ph >= 4 ? 'cykel, crosstrainer, bassäng eller stavgång – 20–45 minuter, måttlig till hög intensitet.' : 'promenader och cykel är den bästa konditionsträningen nu.'}`,
       'Gå i en takt där du kan prata. Använd kryckor eller stav så länge du behöver dem – det ger en jämnare gång.',
-      ph < 5 ? 'Löpning och hopp väntar tills din kirurg har gett klartecken, oftast tidigast efter 3–6 månader.' : 'Har din kirurg gett klartecken kan du byta till ett löpprogram under Löpning → Program.',
+      ph < 5 ? 'Löpning och hopp väntar. Lätt jogging efter samtal med kirurgen – tre av fyra kirurger tillåter det efter 6 månader.' : 'Har din kirurg gett klartecken kan du byta till ett löpprogram under Löpning → Program.',
     ]);
 }

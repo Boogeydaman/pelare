@@ -497,6 +497,12 @@ ANIMS.hip_flex = { props: (p) => [{ kind: 'line', x1: p.W[0] + 2, y1: p.W[1], x2
 ANIMS.hip_ext = { props: (p) => [{ kind: 'line', x1: p.W[0] + 2, y1: p.W[1], x2: p.W[0] + 2, y2: FLOOR }],
   frames: [stand({ arms: [[30, 40], [32, 42]] }), stand({ torso: -86, legs: [[112, 112], [90, 90]], arms: [[30, 40], [32, 42]], feet: [60, 0] })] };
 ANIMS.hip_abd = { view: 'front', anchor: null, frames: [fstand({ arms: [[78, 86], [150, 120]] }), fstand({ legs: [[58, 58], [96, 88]], arms: [[78, 86], [150, 120]] })] };
+ANIMS.supine_abd = { view: 'top', anchor: 'H', ms: 1500, frames: [
+  { torso: -90, legs: [[90, 90], [92, 90]], arms: [[100, 100], [80, 80]] },
+  { torso: -90, legs: [[90, 90], [62, 62]], arms: [[100, 100], [80, 80]] },
+] };
+ANIMS.mini_squat = { anchor: 'F', props: (p) => [{ kind: 'line', x1: p.W[0] + 2, y1: p.W[1], x2: p.W[0] + 2, y2: FLOOR }],
+  frames: [stand({ arms: [[40, 60], [42, 62]] }), stand({ torso: -78, legs: [[62, 112], [64, 112]], arms: [[30, 50], [32, 52]] })] };
 ANIMS.side_leg = { view: 'front', anchor: null, ms: 1500, frames: [
   { torso: 180, head: 185, legs: [[0, 0], [20, 160]], arms: [[200, 300], [90, 90]] },
   { torso: 180, head: 185, legs: [[-24, -24], [20, 160]], arms: [[200, 300], [90, 90]] },
