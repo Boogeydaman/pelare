@@ -11,6 +11,7 @@ import { HOWTO } from './howto';
 import { GymPlayer } from './Player';
 import { GymDiary, GymProgramExtra, GymSplitNotice } from './diary';
 import { coreSession } from './core';
+import { hipAdjust } from './hip';
 import { GymLibraryActions, isCustom } from './custom';
 import { Link } from 'react-router-dom';
 import { ExerciseProgress, GymExerciseList, gymRecords } from './progress';
@@ -37,6 +38,7 @@ function libraryItem(e: Exercise): LibraryItem {
 }
 
 function nextSession(ctx: ModuleCtx) {
+  if (programOf(ctx.profile).id === 'hip_rehab') return hipAdjust(ctx, build(ctx, nextTemplate(ctx, programOf(ctx.profile)).tpl, { reasons: [''] }));
   const program = programOf(ctx.profile);
   const { tpl } = nextTemplate(ctx, program);
   const done = thisWeek(ctx, 'gym').length;
@@ -134,6 +136,7 @@ export const gym: TrainingModule = {
   describe: (l) => (l.data?.kind === 'strength' ? `${l.data.exercises.length} övningar · ${l.data.exercises.reduce((a, e) => a + e.sets.length, 0)} set` : `${l.minutes} min`),
   load(l) {
     if (l.type.startsWith('core')) return { upper: 0.1 }; // short core session: not a hard day
+    if (/^hip[1-3]_/.test(l.type)) return { legs: 0.3 }; // early hip rehab: gentle, not a hard day
     if (l.data?.kind !== 'strength') return { hard: true };
     const m = l.data.exercises.flatMap((e) => EX[e.id]?.primary ?? []);
     return { legs: m.some((x) => ['quads', 'hamstrings', 'glutes'].includes(x)) ? 0.8 : 0.1, upper: m.some((x) => ['chest', 'lats', 'upper_back'].includes(x)) ? 0.8 : 0.1, hard: true };

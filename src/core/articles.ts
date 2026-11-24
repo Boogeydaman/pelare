@@ -116,6 +116,35 @@ export const ARTICLES: Article[] = [
     sources: [1, 2, 3, 4, 5, 10, 12, 13, 21, 28],
   },
   {
+    id: 'hoftprotes', group: 'Pelarna', topic: 'gym', minutes: 5, kicker: 'Efter höftprotes',
+    title: 'Träning efter höftprotes: en fas i taget',
+    lead: 'En ny höft ska ge ett bättre liv – och styrketräning är det som gör att du kan använda den fullt ut. Men läkningen tar den tid den tar.',
+    sections: [
+      { h: 'Din kirurg och fysioterapeut först', p: [
+        'Följ alltid det program och de restriktioner du fått vid operationen. De varierar mellan sjukhus och operationsmetoder. Pelare hjälper dig att hålla igång och bygga vidare – inte att ersätta dem [38][39][40].',
+      ] },
+      { h: 'Fem faser', p: [
+        'Fas 1 (vecka 0–3): fotpumpar, lårspänningar och korta promenader med kryckor eller rollator, varje dag. Fas 2 (3–6): höftlyft, uppresning från stol och stående höftövningar. Fas 3 (6–12): mer styrka, step-ups och motionscykel. Fas 4 (3–6 månader): tillbaka till styrketräning med vikter. Fas 5 (6 månader och mer): långsiktig styrka [38][46][47].',
+        'Tiderna är riktmärken. Du kan stanna kvar i en fas under Inställningar om det känns för tidigt – ingen kan snabba på läkningen, men man kan försena den genom att pressa för hårt för tidigt [48].',
+      ] },
+      { h: 'Restriktionerna har ett slutdatum', p: [
+        'De första veckorna brukar man undvika vissa rörelser – vid bakre snitt till exempel djup böjning, att korsa benen och inåtvridning. Forskningen visar inte att de minskar risken för luxation [41][42], men följ ändå det din kirurg säger. De är tillfälliga, oftast cirka 6 veckor.',
+        'Använd kryckor eller rollator så länge du behöver dem. De ger en jämnare gång och minskar risken att du börjar halta [38][48].',
+      ] },
+      { h: 'Smärta: upp till 5 av 10', p: [
+        'Efter varje rehabpass frågar appen hur ont det gjorde. Upp till 5 av 10 är okej om det har lagt sig till nästa morgon – den svenska smärtmonitoreringsmodellen [45]. Över det blir nästa pass lättare. Smärtfri är inte alltid realistiskt, men smärtan ska inte störa sömnen eller vardagen.',
+      ] },
+      { h: 'Styrka på sikt', p: [
+        'Höftlyft, knäböj från stol, step-ups, marklyft, utfallsböj, sidolyft och höftböjning – i svårare varianter i takt med att du blir starkare. 3–5 övningar, 2–3 gånger i veckan, 2–3 set med 5–20 reps. Klarar du färre än 5 reps: gör övningen lättare. Klarar du fler än 20: gör den svårare [48].',
+        'Forskningen om exakt vilket program som är bäst är fortfarande osäker [43], men styrka, rörlighet och kondition är det som håller dig aktiv i många år.',
+      ] },
+      { h: 'Kondition: gå och cykla', p: [
+        'Promenader och motionscykel är den bästa konditionsträningen efter en höftprotes. De flesta är tillbaka på sina lugnare aktiviteter efter 7–12 månader [44]. Löpning och hopp först efter klartecken från din kirurg – i appen slås löpprogrammen på när du markerat det i Inställningar.',
+      ] },
+    ],
+    sources: [38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48],
+  },
+  {
     id: 'lopning', group: 'Pelarna', topic: 'run', minutes: 3, kicker: 'Löpning',
     title: 'Löpning: mest lugnt, lite hårt',
     lead: 'De flesta springer för fort på de lugna passen och för lugnt på de hårda. Pelare gör tvärtom.',

@@ -75,6 +75,7 @@ export function DonePage() {
   const nav = useNavigate();
   const [feel, setFeel] = useState<Feel>(2);
   const [km, setKm] = useState('');
+  const [pain, setPain] = useState<number | null>(null);
   // GPS distance from the run player, ready to adjust.
   useEffect(() => {
     if (active?.result?.kind === 'run' && active.result.distanceKm) setKm(String(active.result.distanceKm).replace('.', ','));
@@ -107,7 +108,7 @@ export function DonePage() {
   const save = async () => {
     const d = Number(km.replace(',', '.'));
     const data = log.module === 'run' && km.trim() && !Number.isNaN(d) ? { kind: 'run' as const, ...(log.data?.kind === 'run' ? log.data : {}), distanceKm: d } : log.data;
-    await saveSession({ ...log, feel, data });
+    await saveSession({ ...log, feel, data, ...(pain !== null ? { pain } : {}) });
     await setActive(null);
     nav(active.from || '/idag', { replace: true });
   };
@@ -136,6 +137,18 @@ export function DonePage() {
           <Segmented label="Känsla" value={feel} onChange={setFeel} options={[{ value: 1, label: 'Lätt' }, { value: 2, label: 'Lagom' }, { value: 3, label: 'Tungt' }]} />
           {log.module === 'run' && log.type === 'walkrun' && <p className="mt-2 text-[14px] text-ink2">Lätt eller lagom låser upp nästa steg. Tungt betyder samma steg igen.</p>}
         </div>
+        {/^hip\d_/.test(log.type) && (
+          <div className="rise mt-6" style={{ animationDelay: '260ms' }}>
+            <div className="mb-2 text-[14px] text-ink2">Hur ont gjorde det under passet? (0–10)</div>
+            <div className="grid grid-cols-5 gap-2">
+              {([[0, '0'], [2, '1–2'], [4, '3–5'], [7, '6–7'], [9, '8–10']] as const).map(([v, t]) => (
+                <button key={v} onClick={() => setPain(v)} aria-pressed={pain === v}
+                  className={`num h-12 rounded-xl text-[15px] font-semibold ${pain === v ? 'bg-ink text-paper' : 'bg-ink/[0.06]'}`}>{t}</button>
+              ))}
+            </div>
+            <p className="mt-2 text-[13px] text-ink2">{pain === null ? 'Upp till 5 är okej om det har lagt sig till nästa morgon.' : pain <= 5 ? 'Bra – inom det som är okej. Känn efter i morgon bitti.' : 'Över 5: nästa pass blir lättare. Blir det inte bättre, kontakta din fysioterapeut.'}</p>
+          </div>
+        )}
         {log.module === 'run' && (
           <label className="rise mt-6 flex items-center justify-between gap-4 border-t border-rule pt-4" style={{ animationDelay: '280ms' }}>
             <span className="text-[16px]">{active.result?.kind === 'run' && active.result.distanceKm ? 'Distans (GPS)' : 'Distans (valfritt)'}</span>

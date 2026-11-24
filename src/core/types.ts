@@ -14,7 +14,7 @@ export type Equip = 'dumbbell' | 'band' | 'pullup_bar' | 'bench' | 'kettlebell';
 
 export interface Goals {
   gym: 'stronger' | 'muscle' | 'maintain';
-  run: 'start' | '5k' | '10k' | '15k' | '20k';
+  run: 'start' | '5k' | '10k' | '15k' | '20k' | 'walk';
   mobility: 'front_split' | 'side_split' | 'hips' | 'general';
 }
 
@@ -34,9 +34,22 @@ export interface Profile {
   mobilityFocus?: MobilityFocus[];
   /** Preferred days for gym and running, 0 = Monday. Empty = spread automatically. */
   trainingDays?: number[];
+  /** Training after a hip replacement: phases follow the weeks since surgery. */
+  rehab?: HipRehab;
   /** Start screen: shown when the app starts. Off = skip it; text = your own line, e.g. a goal. */
   splash?: { off?: boolean; text?: string };
   createdAt: string;
+}
+
+export type HipApproach = 'bakre' | 'sido' | 'framre' | 'okand';
+export interface HipRehab {
+  kind: 'hip';
+  surgery: string; // date of the operation, YYYY-MM-DD
+  side: 'höger' | 'vänster';
+  approach: HipApproach;
+  holdPhase?: number; // stay in this phase even if time says the next one
+  cleared?: boolean; // surgeon/physio has cleared free training (running etc.)
+  ended?: boolean; // back to normal training
 }
 
 export interface CheckIn { date: string; feeling: Feeling; minutes: number; place: Where }
@@ -99,6 +112,7 @@ export interface SessionLog {
   data?: LogData;
   plan?: PlannedSession; // snapshot, for "Kör igen"
   replaces?: ModuleId; // "Jag tränade något annat i dag": counts as that pillar's session
+  pain?: number; // 0–10, pain during the session (hip rehab, pain-monitoring model)
   sample?: boolean; // seeded example data
 }
 

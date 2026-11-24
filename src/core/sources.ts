@@ -1,5 +1,5 @@
 // All sources the app cites. 1–26 come from the spec (docs/SPEC.md section 12);
-// 27–37 were looked up and checked against PubMed/journal/publisher pages on 2026-11-20 (35 = the user's PDF).
+// 27–48 were looked up and checked against PubMed/journal/publisher pages on 2026-11-20 (35 = the user's PDF).
 import { SOURCES as SPEC_SOURCES, type Source } from '../engine/rules';
 
 export type { Source };
@@ -14,6 +14,17 @@ const EXTRA: Source[] = [
   { id: 35, year: 2020, level: 'D', cite: 'Joggingguide 2020: Löpning för nybörjare – från 0 till 5 km på 6 veckor (gå-jogg, 3 pass i veckan).' },
   { id: 36, year: 2024, level: 'H', cite: 'Hal Higdon. Novice-program för 10 km (8 veckor), 15 km (10 veckor) och halvmaraton (12 veckor): långpass som växer varje helg, 3–4 löppass i veckan.', url: 'https://us.humankinetics.com/blogs/excerpt/novice-training-programs' },
   { id: 37, year: 2024, level: 'H', cite: 'Nuffield Health. 8-week 10km training plan för nybörjare.', url: 'https://www.nuffieldhealth.com/articles/fitness/8-week-10km-training-plan' },
+  { id: 38, year: 2023, level: 'H', cite: 'Nationellt system för kunskapsstyrning. Personcentrerat och sammanhållet vårdförlopp höftledsartros – bilaga H: rehabilitering vid proteskirurgi (gång med kryckor, träningsperiod 8–12 veckor).', url: 'https://vardpersonal.1177.se/globalassets/nkk/nationell/media/dokument/kunskapsstod/vardforlopp/bilagor-vardforlopp/bilaga-h---rehabilitering-hoftledsartros-proteskirurgi.pdf' },
+  { id: 39, year: 2024, level: 'H', cite: '1177. Höftledsoperation – att få en ny höftled (träning från första dagen, blodproppsförebyggande, uppföljning).', url: 'https://www.1177.se/undersokning-behandling/operationer/operationer-av-kna-och-hofter/hoftledsoperation---att-fa-en-ny-hoftled/' },
+  { id: 40, year: 2020, level: 'C', cite: 'NICE NG157. Joint replacement (primary): hip, knee and shoulder – rehabilitation advice, self-directed and supervised rehabilitation.', url: 'https://www.nice.org.uk/guidance/ng157' },
+  { id: 41, year: 2020, level: 'A', cite: 'Crompton m.fl. Do hip precautions after posterior-approach total hip arthroplasty affect dislocation rates? Systematic review, 7 studies, 6 900 patienter.', url: 'https://www.ncbi.nlm.nih.gov/pmc/articles/PMC8023879/' },
+  { id: 42, year: 2016, level: 'A', cite: 'Smith m.fl. Hip precautions, equipment and restrictions after hip replacement. Cochrane Database Syst Rev (mycket låg evidens).', url: 'https://pmc.ncbi.nlm.nih.gov/articles/PMC6458012' },
+  { id: 43, year: 2021, level: 'A', cite: 'Evaluation of exercise interventions and outcomes after hip arthroplasty: systematic review and meta-analysis, 32 studier. JAMA Netw Open. 2021', url: 'https://pubmed.ncbi.nlm.nih.gov/33635329/' },
+  { id: 44, year: 2021, level: 'A', cite: 'Return to sports after total hip arthroplasty: an umbrella review for consensus guidelines (gång och vandring vanligen efter 7–12 månader).', url: 'https://pubmed.ncbi.nlm.nih.gov/34668788/' },
+  { id: 45, year: 2007, level: 'B', cite: 'Silbernagel, Thomeé m.fl. Continued sports activity, using a pain-monitoring model, during rehabilitation. Am J Sports Med. 2007 (smärta upp till 5/10 under belastning).', url: 'https://www.slideshare.net/slideshow/silbernagel-kg-continued-2007-ajsm2-3/50981616' },
+  { id: 46, year: 2022, level: 'H', cite: 'Mass General Brigham. Rehabilitation protocol for total hip arthroplasty (faser vecka 1–6, 6–12, motionscykel från vecka 3).', url: 'https://www.massgeneralbrigham.org/content/dam/unified-xwalk/pdf/patient-education/english/rehabilitation-protocol-for-total-hip-arthroplasty.pdf' },
+  { id: 47, year: 2023, level: 'H', cite: 'Region Dalarna. Patientinformation höftplastik (två kryckor 6 veckor vid sidosnitt, motionscykel och kontrollerad gymträning efter 3 månader).', url: 'https://inte.regiondalarna.se/contentassets/b5d0627b13b9432d95d24ca7980c340e/hoftplastik.pdf' },
+  { id: 48, year: 2023, level: 'D', cite: 'Fysioterapeut med egen höftprotes sedan 14 år: långsiktiga styrkeövningar efter höftprotes (YouTube, transkript från användaren).' },
   { id: 31, year: 2021, level: 'B', cite: 'Maeo m.fl. Greater hamstrings hypertrophy after training at long versus short muscle lengths (sittande vs liggande bencurl). Med Sci Sports Exerc. 2021', url: 'https://pubmed.ncbi.nlm.nih.gov/33009197/' },
   { id: 32, year: 2023, level: 'B', cite: 'Kinoshita m.fl. Triceps surae hypertrophy is greater after standing versus seated calf-raise training. Front Physiol. 2023', url: 'https://doi.org/10.3389/fphys.2023.1272106' },
 ];

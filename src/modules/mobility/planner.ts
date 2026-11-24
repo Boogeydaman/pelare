@@ -4,6 +4,8 @@
 import { weekStart } from '../../core/format';
 import type { HoldItem, MobilityFocus, PlannedSession, Profile, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
+import { stretchOk } from './rehab';
+import { rehabCautious } from '../common';
 import { AREA_NAME, STRETCH, STRETCHES, type Area, type Stretch } from './stretches';
 
 /** Areas every week must cover (whole-body base). */
@@ -102,10 +104,12 @@ export function build(ctx: ModuleCtx, opts: BuildOpts): PlannedSession {
 
   const holds: HoldItem[] = [];
   const day = Math.floor(ctx.now.getTime() / 864e5);
-  if (opts.minutes >= 8) holds.push(hold(WARMUPS[day % WARMUPS.length], 40));
+  const ok = (id: string) => stretchOk(ctx.profile, id, ctx.now);
+  const warm = WARMUPS.filter(ok);
+  if (opts.minutes >= 8 && warm.length) holds.push(hold(warm[day % warm.length], 40));
 
   const covered = new Map<Area, number>();
-  const statics = STRETCHES.filter((s) => s.kind === 'statisk' && s.group !== 'Djurrörelser');
+  const statics = STRETCHES.filter((s) => s.kind === 'statisk' && s.group !== 'Djurrörelser' && ok(s.id));
   for (let pass = 0; pass < 3; pass++) {
     for (const area of order) {
       if ((covered.get(area) ?? 0) > pass) continue;
@@ -113,7 +117,8 @@ export function build(ctx: ModuleCtx, opts: BuildOpts): PlannedSession {
       const cands = statics.filter((s) => s.areas.includes(area) && !holds.some((h) => h.id === level(s, n).id) && !s.easier);
       if (!cands.length) continue;
       cands.sort((a, b) => b.areas.filter((x) => pool.includes(x)).reduce((v, x) => v + need(x), 0) - a.areas.filter((x) => pool.includes(x)).reduce((v, x) => v + need(x), 0));
-      const pick = level(cands[0], focus.has(area) ? n : Math.min(n, 7));
+      const lv = level(cands[0], focus.has(area) ? n : Math.min(n, 7));
+      const pick = ok(lv.id) ? lv : cands[0];
       const next = [...holds, hold(pick.id, sec, focus.has(area) ? rounds : Math.max(1, rounds - 1))];
       if ((minutesOf(next) > opts.minutes && holds.length >= 2) || holds.length >= 8) break;
       holds.splice(0, holds.length, ...next);
@@ -124,7 +129,8 @@ export function build(ctx: ModuleCtx, opts: BuildOpts): PlannedSession {
   const hit = order.filter((a) => covered.has(a));
   const lowest = order.filter((a) => need(a) > 0.05).slice(0, 2);
   const title = opts.title ?? (hit.length >= 6 ? 'Hela kroppen' : `Rörlighet: ${hit.slice(0, 2).map((a) => lower(AREA_NAME[a])).join(' och ')}`);
-  const reasons = [
+  const rehabNote = rehabCautious(ctx.profile, ctx.now) ? ['Efter höftoperationen: bara stretchar som passar din fas. Höftens rörlighet kommer tillbaka med tiden och styrkeövningarna – tvinga den inte.'] : [];
+  const reasons = [...rehabNote,
     lowest.length ? `${lowest.map((a, i) => (i ? lower(AREA_NAME[a]) : AREA_NAME[a])).join(' och ')} har fått minst tid den här veckan.` : 'Alla områden har fått sin dos den här veckan – det här håller rörligheten vid liv.',
     `${hit.length} av ${pool.length} områden i dag. Hela kroppen får minst 5 minuter i veckan${focus.size ? ', dina fokusområden dubbelt så mycket' : ''} [22].`,
     `${rounds} varv × ${sec} s${rounds * sec >= 90 ? ' på fokusområdena – dosen som gör dig rörligare' : '. Ökar när du stretchat några gånger'}.`,

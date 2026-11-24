@@ -3,7 +3,7 @@ import { createElement } from 'react';
 import { weekStart } from '../../core/format';
 import type { LibraryItem, Metric, PlannedSession, ProgramOption } from '../../core/types';
 import { QuickLog } from '../../shared/ui/fields';
-import { distinctDays, fmt1, logsOf, thisWeek, weeklySeries } from '../common';
+import { distinctDays, fmt1, logsOf, rehabCautious, thisWeek, weeklySeries } from '../common';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { FocusPicker } from './FocusPicker';
 import { FOCUS_AREAS, FOCUS_NAME, areaSeconds, build, focusOf, hold, minutesOf, sessionsDone, targets } from './planner';
@@ -78,7 +78,11 @@ export const mobility: TrainingModule = {
 
   nextSession,
   candidates: (ctx) => [nextSession(ctx), micro(ctx)],
-  quickStarts: (ctx) => [
+  quickStarts: (ctx) => rehabCautious(ctx.profile, ctx.now) ? [
+    { id: 'micro', label: 'Mikropass', hint: '6 min · stretchar som passar din fas', session: micro(ctx) },
+    { id: 'build15', label: 'Rörlighet 15 min', hint: 'Anpassat efter höftoperationen', session: build(ctx, { minutes: 15 }) },
+    { id: 'log', label: 'Logga i efterhand', hint: 'Yoga eller egen stretch', to: '/rorlighet/logga' },
+  ] : [
     ...focusOf(ctx.profile).map((f) => ({
       id: `focus_${f}`, label: `Fokus: ${FOCUS_NAME[f].toLowerCase()}`, hint: '15 min · bara ditt fokusområde',
       session: build(ctx, { minutes: 15, only: FOCUS_AREAS[f], title: FOCUS_NAME[f], type: `focus_${f}` }),

@@ -2,7 +2,7 @@ import { ArrowLeft } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { saveProfile } from '../core/db';
 import { useNavigate } from 'react-router-dom';
-import type { Equip, Goals, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
+import type { Equip, Goals, HipApproach, HipRehab, MobilityFocus, ModuleId, Place, Profile } from '../core/types';
 import { FOCUS_OPTIONS } from '../modules/mobility/FocusPicker';
 import { RUN_PER_WEEK, gymProgramFor } from '../modules/common';
 import { InstallCard } from '../shared/ui/InstallCard';
@@ -29,7 +29,7 @@ export const GOAL_OPTIONS: { [K in ModuleId]: { value: Goals[K]; label: string; 
   ],
 };
 
-type Step = 'welcome' | 'gym' | 'run' | 'mobility' | 'days' | 'place' | 'health';
+type Step = 'welcome' | 'rehab' | 'rehabinfo' | 'gym' | 'run' | 'mobility' | 'days' | 'place' | 'health';
 const HEALTH = [
   'Har en läkare sagt att du har en hjärtsjukdom eller högt blodtryck?',
   'Får du ont i bröstet eller blir yr när du anstränger dig?',
@@ -50,19 +50,28 @@ export function Onboarding() {
   const [places, setPlaces] = useState<Place[]>(['gym']);
   const [equip, setEquip] = useState<Equip[]>([]);
   const [health, setHealth] = useState(HEALTH.map(() => false));
-  const steps: Step[] = ['welcome', 'gym', 'run', 'mobility', 'days', 'place', 'health'];
+  // Training after a hip replacement: asked first; then the date, side and approach decide the programme.
+  const [hip, setHip] = useState(false);
+  const [surgery, setSurgery] = useState('');
+  const [side, setSide] = useState<HipRehab['side']>('höger');
+  const [approach, setApproach] = useState<HipApproach>('okand');
+  const steps: Step[] = hip
+    ? ['welcome', 'rehab', 'rehabinfo', 'gym', 'mobility', 'place', 'health']
+    : ['welcome', 'rehab', 'gym', 'run', 'mobility', 'days', 'place', 'health'];
   const step = steps[i];
   const next = () => setI((x) => Math.min(steps.length - 1, x + 1));
 
   const finish = async () => {
     const now = new Date().toISOString();
-    const gymProgram = gymProgramFor(gymDays, places, equip);
+    const gymProgram = hip ? 'hip_rehab' : gymProgramFor(gymDays, places, equip);
+    const runGoal: Goals['run'] = hip ? 'walk' : goals.run;
     const legacy = focus.find((f): f is 'front_split' | 'side_split' | 'hips' => f === 'front_split' || f === 'side_split' || f === 'hips') ?? 'general';
     const profile: Profile = {
-      goals: { ...goals, mobility: legacy }, daysPerWeek: gymDays + (RUN_PER_WEEK[goals.run] ?? 3), gymDays, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
+      goals: { ...goals, run: runGoal, mobility: legacy }, daysPerWeek: gymDays + (RUN_PER_WEEK[runGoal] ?? 3), gymDays: hip ? 3 : gymDays, places, homeEquipment: equip, createdAt: now, mobilityFocus: focus,
+      ...(hip ? { rehab: { kind: 'hip' as const, surgery, side, approach } } : {}),
       enrollments: {
         gym: { programId: gymProgram, startedAt: now },
-        run: { programId: goals.run, startedAt: now },
+        run: { programId: runGoal, startedAt: now },
         mobility: { programId: 'whole', startedAt: now },
       },
     };
@@ -101,6 +110,33 @@ export function Onboarding() {
       </div>
 
       <div key={step} className="rise flex flex-1 flex-col pt-8">
+        {step === 'rehab' && (
+          <Q title="Råkar du heta Anders och behöver specialanpassad träning efter din höftledsoperation?">
+            <OptionList value={hip ? 'yes' : 'no'} onChange={(v) => setHip(v === 'yes')} options={[
+              { value: 'yes', label: 'Ja, träning efter höftprotes', hint: 'Programmet följer veckorna efter operationen – från de första dagarna till tung styrketräning' },
+              { value: 'no', label: 'Nej, vanlig träning', hint: 'Gym, löpning och rörlighet' },
+            ]} />
+          </Q>
+        )}
+        {step === 'rehabinfo' && (
+          <Q kicker="Höftprotes" kind="gym" title="Berätta lite om operationen">
+            <label className="block">
+              <span className="mb-1 block text-[14px] text-ink2">Datum för operationen</span>
+              <input type="date" value={surgery} max={new Date().toISOString().slice(0, 10)} onChange={(e) => setSurgery(e.target.value)} aria-label="Datum för operationen"
+                className="h-12 w-full rounded-2xl bg-ink/[0.06] px-4 text-[17px] outline-none focus:ring-2 focus:ring-ink" />
+            </label>
+            <div className="mt-6 mb-1 text-[14px] text-ink2">Vilken höft?</div>
+            <OptionList value={side} onChange={setSide} options={[{ value: 'höger', label: 'Höger' }, { value: 'vänster', label: 'Vänster' }]} />
+            <div className="mt-6 mb-1 text-[14px] text-ink2">Hur opererades du? Står ofta i utskrivningspapperen.</div>
+            <OptionList value={approach} onChange={setApproach} options={[
+              { value: 'bakre', label: 'Bakre snitt', hint: 'Posteriort – snittet på baksidan/sidan av höften' },
+              { value: 'sido', label: 'Sidosnitt', hint: 'Lateralt eller anterolateralt' },
+              { value: 'framre', label: 'Främre snitt', hint: 'Anteriort – snittet på framsidan' },
+              { value: 'okand', label: 'Vet inte', hint: 'Appen väljer försiktiga övningar' },
+            ]} />
+            <p className="mt-6 rounded-2xl bg-ink/[0.06] p-4 text-[14px] leading-snug">Appen ersätter inte din kirurg eller fysioterapeut. Följ alltid de restriktioner och det program du fått från dem – Pelare hjälper dig att hålla igång och bygga vidare.</p>
+          </Q>
+        )}
         {(step === 'gym' || step === 'run') && (
           <Q kicker={MODULE_TITLE[step][0]} kind={step} title={MODULE_TITLE[step][1]}>
             <OptionList value={goals[step]} options={GOAL_OPTIONS[step]} onChange={(v) => setGoals({ ...goals, [step]: v } as Goals)} />
@@ -157,7 +193,7 @@ export function Onboarding() {
 
       <div className="pt-6">
         {step === 'health' ? <Primary onClick={finish}>Visa dagens pass</Primary>
-          : <Primary onClick={next} disabled={step === 'place' && places.length === 0}>Fortsätt</Primary>}
+          : <Primary onClick={next} disabled={(step === 'place' && places.length === 0) || (step === 'rehabinfo' && !surgery)}>Fortsätt</Primary>}
       </div>
     </div>
   );

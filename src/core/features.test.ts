@@ -2,6 +2,10 @@ import { describe, expect, it } from 'vitest';
 import { EX } from '../modules/gym/exercises';
 import { e1rm, plateauTip, similar, swapItem, weeklyTarget, type Done } from '../modules/gym/planner';
 import { splitWarning } from '../modules/gym/diary';
+import { hipTemplate, hipAdjust } from '../modules/gym/hip';
+import { gymDaysOf, rehabPhase, runsPerWeekOf } from '../modules/common';
+import { stretchOk } from '../modules/mobility/rehab';
+import { build } from '../modules/gym/planner';
 import { registerCustom, type CustomExercise } from '../modules/gym/custom';
 import { paceZones, riegel, zonePosition } from '../modules/run/pace';
 import type { ModuleCtx } from '../modules/types';
@@ -128,5 +132,62 @@ describe('Få gympass i veckan', () => {
     expect(splitWarning(p('allmuscles', 4))).toBeNull();
     expect(splitWarning(p('minimal', 2))).toBeNull();
     expect(splitWarning({ ...p('allmuscles', 2), places: ['home'], homeEquipment: ['dumbbell'] })?.to).toBe('home_db');
+  });
+});
+
+describe('Efter höftprotes', () => {
+  const hip = (surgery: string, extra: Partial<NonNullable<Profile['rehab']>> = {}): Profile => ({
+    ...profile, goals: { ...profile.goals, run: 'walk' }, rehab: { kind: 'hip', surgery, side: 'höger', approach: 'bakre', ...extra },
+    enrollments: { ...profile.enrollments, gym: { programId: 'hip_rehab', startedAt: surgery }, run: { programId: 'walk', startedAt: surgery } },
+  });
+  const at = (p: Profile, logs: SessionLog[] = []): ModuleCtx => ({ ...ctx(logs), profile: p });
+
+  it('fasen följer veckorna efter operationen, och man kan stanna kvar', () => {
+    expect(rehabPhase(hip('2026-11-15'), NOW)).toBe(1);
+    expect(rehabPhase(hip('2026-10-20'), NOW)).toBe(2);
+    expect(rehabPhase(hip('2026-09-20'), NOW)).toBe(3);
+    expect(rehabPhase(hip('2026-07-01'), NOW)).toBe(4);
+    expect(rehabPhase(hip('2026-03-01'), NOW)).toBe(5);
+    expect(rehabPhase(hip('2026-07-01', { holdPhase: 3 }), NOW)).toBe(3);
+    expect(rehabPhase(hip('2026-07-01', { ended: true }), NOW)).toBeNull();
+  });
+
+  it('fas 1 är ett kort dagligt program utan stående övningar, och inga löppass', () => {
+    const p = hip('2026-11-15');
+    const { tpl } = hipTemplate(at(p));
+    expect(tpl.slots.map((x) => x.ex)).toContain('ankle_pumps');
+    expect(gymDaysOf(p)).toBe(7);
+    expect(runsPerWeekOf(p)).toBe(0);
+  });
+
+  it('sidosnitt: inga benlyft åt sidan de första 6 veckorna', () => {
+    const p = hip('2026-10-20', { approach: 'sido' });
+    const all = [0, 1].flatMap((k) => hipTemplate(at(p, Array.from({ length: k }, (_, i) => ({ id: `h${i}`, module: 'gym', type: 'hip2_a', title: '', startedAt: '2026-11-20T10:00:00', minutes: 20 })))).tpl.slots.map((x) => x.ex));
+    expect(all).not.toContain('standing_hip_abd');
+    expect(all).not.toContain('sidelying_abd');
+  });
+
+  it('smärta över 5 förra passet ger ett lättare pass', () => {
+    const p = hip('2026-09-20');
+    const logs: SessionLog[] = [{ id: 'x', module: 'gym', type: 'hip3_a', title: '', startedAt: '2026-11-21T10:00:00', minutes: 30, pain: 7 }];
+    const c = at(p, logs);
+    const plan = hipAdjust(c, build(c, hipTemplate(c).tpl, { reasons: [''] }));
+    expect(plan.reasons[0].text).toMatch(/ont/);
+  });
+
+  it('djupa höftstretchar väntar, överkroppen går bra direkt', () => {
+    const early = hip('2026-11-15');
+    expect(stretchOk(early, 'doorway', NOW)).toBe(true);
+    expect(stretchOk(early, 'pigeon', NOW)).toBe(false);
+    expect(stretchOk(early, 'hip_flexor', NOW)).toBe(false);
+    expect(stretchOk(hip('2026-09-20'), 'hip_flexor', NOW)).toBe(true);
+    expect(stretchOk(hip('2026-03-01'), 'pigeon', NOW)).toBe(false);
+    expect(stretchOk(hip('2026-03-01', { cleared: true }), 'pigeon', NOW)).toBe(true);
+  });
+
+  it('coachen föreslår promenad i stället för löpning, och inga djurrörelser', () => {
+    const v = coach(at(hip('2026-09-20')), MODULE_LIST);
+    for (const s of [v.primary, ...v.alternatives]) if (s.module === 'run') expect(s.type).toBe('walk');
+    expect(v.addOns.some((a) => a.label === 'Djurrörelser')).toBe(false);
   });
 });

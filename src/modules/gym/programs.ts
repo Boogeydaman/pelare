@@ -1,6 +1,7 @@
 // Gym programs. Each muscle is trained at least twice a week (strength.frequency, A),
 // at most ~10 sets per muscle per session (strength.session_cap) and 1–3 exercises per muscle and session.
 import type { ProgramOption } from '../../core/types';
+import { ALL_HIP_SESSIONS } from './hip';
 
 export interface Slot {
   ex: string;
@@ -100,6 +101,12 @@ export const PROGRAMS: GymProgram[] = [
     sessions: [],
   },
   {
+    id: 'hip_rehab', name: 'Efter höftprotes', place: 'home', weeks: 26, perWeek: 3,
+    description: 'Fem faser som följer veckorna efter operationen: från dagliga övningar i sängen till tung styrketräning. Hemma i början, med vikter från fas 4. Följ alltid din kirurgs och fysioterapeuts råd.',
+    source: 'Svenskt vårdförlopp för höftprotes, 1177, Mass General Brigham-protokollet och en fysioterapeut med egen höftprotes (nivå D).',
+    sessions: [],
+  },
+  {
     id: 'bodyweight', name: 'Kroppsvikt 3×', place: 'home', weeks: 6, perWeek: 3,
     description: 'Helkropp utan vikter. Du blir starkare genom svårare varianter: när du klarar toppen av repintervallet föreslås nästa steg.',
     source: 'Calisthenics Family (topp 10-övningar, 3×/v helkropp), calisthenics per muskelgrupp-videon (progressioner).',
@@ -126,6 +133,9 @@ export const PROGRAMS: GymProgram[] = [
     ],
   },
 ];
+
+// Hip rehab sessions come from hip.ts (phase by phase).
+PROGRAMS.find((p) => p.id === 'hip_rehab')!.sessions = ALL_HIP_SESSIONS;
 
 // The rolling program draws from every gym session in the other gym programs.
 const ROLLING = PROGRAMS.find((p) => p.id === 'rolling')!;

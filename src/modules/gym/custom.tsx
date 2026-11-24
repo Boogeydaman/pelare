@@ -11,7 +11,7 @@ import { HOWTO } from './howto';
 
 export interface CustomExercise extends Exercise { how: string[]; custom: true }
 
-const ANIM_FOR: Record<Group, string> = { Ben: 'squat', Bröst: 'bench', Rygg: 'row', Axlar: 'ohp', Armar: 'curl', Mage: 'crunch', Färdighet: 'stand' };
+const ANIM_FOR: Record<Group, string> = { Ben: 'squat', Bröst: 'bench', Rygg: 'row', Axlar: 'ohp', Armar: 'curl', Mage: 'crunch', Färdighet: 'stand', Höftrehab: 'bridge' };
 const ALL_MUSCLES = Object.keys(MUSCLE_NAME) as Muscle[];
 const NEEDS: { value: Need; label: string }[] = [
   { value: 'barbell', label: 'Skivstång' }, { value: 'dumbbell', label: 'Hantlar' }, { value: 'cable', label: 'Kabel' }, { value: 'machine', label: 'Maskin' },

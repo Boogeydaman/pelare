@@ -2,7 +2,7 @@ import { Footprints } from 'lucide-react';
 import { createElement } from 'react';
 import type { LibraryItem, Metric, ProgramOption } from '../../core/types';
 import { Field, NumberInput, QuickLog, parseNum } from '../../shared/ui/fields';
-import { fmt1, thisWeek, weeklySeries } from '../common';
+import { fmt1, rehabCautious, runsPerWeekOf, thisWeek, weeklySeries } from '../common';
 import { DISTANCE, distanceWeek, programWeek, slotsOf, type DistanceId } from './planner';
 import type { LogFormProps, ModuleCtx, TrainingModule } from '../types';
 import { RunPlayer } from './Player';
@@ -20,6 +20,7 @@ const PROGRAMS: ProgramOption[] = [
     description: 'För dig som springer 10 km bekvämt. Fyra pass i veckan med ett långpass som växer från 60 minuter till knappt två timmar, med lättare veckor emellan. Vecka 12 springer du 20 km.' },
   { id: '5k', name: 'Snabbare 5 km', weeks: 8, perWeek: 3, description: 'För dig som redan springer 5 km. Två lugna pass och ett intervallpass i veckan.' },
   { id: 'maintain', name: 'Underhåll', weeks: 4, perWeek: 2, description: 'Två lugna pass i veckan för att behålla formen.' },
+  { id: 'walk', name: 'Promenad och cykel', weeks: 26, perWeek: 4, description: 'Efter en höftoperation: promenader som blir längre vecka för vecka, eller motionscykel. Löpning först efter klartecken från din kirurg.' },
 ];
 
 const TYPES: LibraryItem[] = [
@@ -55,12 +56,19 @@ export const run: TrainingModule = {
   nextSession: next,
   candidates(ctx) {
     const n = next(ctx);
+    if (n.type === 'walk') return [n]; // hip rehab: walking only
     const g = guard(ctx.profile, ctx.logs, ctx.now);
     const short = stage(ctx.profile, ctx.logs) === 'done' ? easy(20, g) : n;
     return n.id === short.id ? [n] : [n, { ...short, id: 'run:easy20' }];
   },
   quickStarts: (ctx) => {
     const g = guard(ctx.profile, ctx.logs, ctx.now);
+    if (rehabCautious(ctx.profile, ctx.now)) {
+      return [
+        { id: 'walk', label: 'Promenad', hint: 'Längden följer veckorna efter operationen', session: next(ctx) },
+        { id: 'log', label: 'Logga i efterhand', hint: 'Promenad eller cykel', to: '/lopning/logga' },
+      ];
+    }
     return [
       { id: 'easy20', label: 'Lugn runda', hint: '20 min · pratbart tempo', session: { ...easy(20, g), id: 'run:easy20' } },
       { id: 'strides', label: 'Lugnt + stegringar', hint: '25 min · lätta, snabba steg', session: strides() },
@@ -69,7 +77,7 @@ export const run: TrainingModule = {
       { id: 'log', label: 'Logga i efterhand', hint: 'Sprang du med klockan?', to: '/lopning/logga' },
     ];
   },
-  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: distanceWeek(ctx)?.week.runs ?? program(ctx).perWeek, unit: 'pass' }),
+  weekly: (ctx) => ({ done: thisWeek(ctx, 'run').length, target: distanceWeek(ctx)?.week.runs ?? (program(ctx).id === 'walk' ? runsPerWeekOf(ctx.profile) : program(ctx).perWeek), unit: 'pass' }),
 
   programs: PROGRAMS,
   program(ctx) {

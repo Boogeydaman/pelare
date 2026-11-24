@@ -4,6 +4,7 @@ import { fmtDate, weekStart } from '../../core/format';
 import type { ExerciseResult, Goals, PlannedSession, Profile, SessionLog, StrengthItem } from '../../core/types';
 import type { ModuleCtx } from '../types';
 import { gymDaysOf } from '../common';
+import { hipTemplate } from './hip';
 import { EX, MUSCLES, MUSCLE_NAME, type Exercise, type Muscle, type Need } from './exercises';
 import { PROGRAMS, PROGRAM_BY_ID, type GymProgram, type SessionTemplate, type Slot } from './programs';
 
@@ -175,6 +176,7 @@ export function programOf(profile: Profile): GymProgram {
 
 export function nextTemplate(ctx: ModuleCtx, program: GymProgram): { tpl: SessionTemplate; index: number } {
   if (program.id === 'rolling') return rollingNext(ctx, program);
+  if (program.id === 'hip_rehab') return hipTemplate(ctx);
   const started = new Date(ctx.profile.enrollments.gym?.startedAt ?? 0);
   const types = new Set(program.sessions.map((s) => s.type));
   const done = ctx.logs.filter((l) => l.module === 'gym' && new Date(l.startedAt) >= started && types.has(l.type)).length;

@@ -474,3 +474,36 @@ ANIMS.bird_dog = { anchor: 'K', ms: 1500, hold: 0.4, frames: [
   { torso: -10, legs: [[90, 180], [92, 180]], arms: [[90, 90], [88, 90]] },
   { torso: -8, head: -5, legs: [[90, 180], [178, 180]], arms: [[-8, -8], [88, 90]] },
 ] };
+
+// ======================================================== Hip rehab
+const lying = (x: Partial<Spec> = {}): Spec => ({ torso: 180, head: 180, legs: [[0, 0], [2, 0]], arms: [[10, 5]], ...x });
+ANIMS.ankle_pump = { ms: 700, hold: 0.1, frames: [lying({ feet: [-80, -80] }), lying({ feet: [10, 10] })] };
+ANIMS.quad_set = { ms: 1600, hold: 0.45, frames: [lying({ legs: [[-6, 6], [2, 0]] }), lying({ legs: [[0, 0], [2, 0]] })] };
+ANIMS.heel_slide = { ms: 1500, frames: [lying(), lying({ legs: [[-45, 45], [2, 0]] })] };
+ANIMS.short_arc = { ms: 1300, props: (p) => [{ kind: 'rect', x: p.K[0] - 6, y: p.K[1] + 2, w: 12, h: FLOOR - p.K[1] - 2 }],
+  frames: [lying({ legs: [[-14, 22], [2, 0]] }), lying({ legs: [[-14, -14], [2, 0]] })] };
+ANIMS.slr = { ms: 1500, frames: [
+  lying({ legs: [[0, 0], [-50, 50]] }),
+  lying({ legs: [[-35, -35], [-50, 50]] }),
+] };
+ANIMS.sit_to_stand = { anchor: 'F', ms: 1500,
+  props: (p) => [{ kind: 'rect', x: p.H[0] - 16, y: p.H[1] + 3, w: 22, h: FLOOR - p.H[1] - 3 }, { kind: 'line', x1: p.H[0] - 14, y1: p.H[1] + 3, x2: p.H[0] - 16, y2: p.H[1] - 26 }],
+  frames: [
+    { torso: -60, head: -50, legs: [[0, 92]], arms: [[60, 10]], on: ['F', FLOOR], feet: [0] },
+    stand({ arms: [[60, 10]] }),
+  ] };
+ANIMS.hip_flex = { props: (p) => [{ kind: 'line', x1: p.W[0] + 2, y1: p.W[1], x2: p.W[0] + 2, y2: FLOOR }],
+  frames: [stand({ arms: [[40, 60], [88, 90]] }), stand({ legs: [[-5, 90], [90, 90]], arms: [[40, 60], [88, 90]], feet: [0, 0] })] };
+ANIMS.hip_ext = { props: (p) => [{ kind: 'line', x1: p.W[0] + 2, y1: p.W[1], x2: p.W[0] + 2, y2: FLOOR }],
+  frames: [stand({ arms: [[30, 40], [32, 42]] }), stand({ torso: -86, legs: [[112, 112], [90, 90]], arms: [[30, 40], [32, 42]], feet: [60, 0] })] };
+ANIMS.hip_abd = { view: 'front', anchor: null, frames: [fstand({ arms: [[78, 86], [150, 120]] }), fstand({ legs: [[58, 58], [96, 88]], arms: [[78, 86], [150, 120]] })] };
+ANIMS.side_leg = { view: 'front', anchor: null, ms: 1500, frames: [
+  { torso: 180, head: 185, legs: [[0, 0], [20, 160]], arms: [[200, 300], [90, 90]] },
+  { torso: 180, head: 185, legs: [[-24, -24], [20, 160]], arms: [[200, 300], [90, 90]] },
+] };
+ANIMS.step_down = { view: 'front', anchor: null, ms: 1500,
+  props: (p) => [{ kind: 'rect', x: p.F[0] - 14, y: p.F[1] + 2, w: 26, h: FLOOR - p.F[1] - 2 }],
+  frames: [
+    { torso: -90, legs: [[86, 92], [100, 82]], arms: [[78, 86], [150, 120]], on: ['F', 88] },
+    { torso: -90, legs: [[68, 116], [104, 96]], arms: [[78, 86], [150, 120]], on: ['F', 88] },
+  ] };

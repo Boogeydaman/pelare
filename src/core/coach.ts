@@ -3,6 +3,7 @@
 import type { Load, ModuleCtx, TrainingModule } from '../modules/types';
 import { isSameDay, weekStart } from './format';
 import { coreDue, coreSession, isCore } from '../modules/gym/core';
+import { rehabCautious } from '../modules/common';
 import type { LogData, ModuleId, PlannedSession, Reason, SessionLog } from './types';
 
 const HOUR = 3600_000;
@@ -108,7 +109,7 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   // Running on consecutive days: the tissues that take the impact (tendons, bone) adapt more slowly than
   // heart and lungs, so a rest day between runs lowers the injury risk – above all for newer runners.
   // Never three days in a row; the day after a run only an easy run, and only when the week needs it.
-  const ranOn = (d: number) => logs.some((l) => l.module === 'run' && isSameDay(l.startedAt, new Date(now.getTime() - d * DAY)));
+  const ranOn = (d: number) => logs.some((l) => l.module === 'run' && l.type !== 'walk' && isSameDay(l.startedAt, new Date(now.getTime() - d * DAY)));
   const ranYesterday = ranOn(1);
   const ranTwoDays = ranYesterday && ranOn(2);
 
@@ -146,8 +147,8 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
       let blocked: string | undefined;
       if (lightOnly && hard) blocked = 'lugn dag';
       if (hard && (load.legs ?? 0) >= 0.8 && recentHardLegs) blocked = 'benen behöver 24 timmar mellan tunga ben och hård löpning';
-      if (m.id === 'run' && ranTwoDays) blocked = 'löpning tre dagar i rad';
-      else if (m.id === 'run' && ranYesterday && (hard || left < daysLeft)) blocked = 'löpning dag efter dag';
+      if (m.id === 'run' && s.type !== 'walk' && ranTwoDays) blocked = 'löpning tre dagar i rad';
+      else if (m.id === 'run' && s.type !== 'walk' && ranYesterday && (hard || left < daysLeft)) blocked = 'löpning dag efter dag';
 
       const fatigue = (load.legs ?? 0) * Math.min(1, body.legs / 1.2) + (load.upper ?? 0) * Math.min(1, body.upper / 1.2);
       const fit = s.minutes <= checkin.minutes ? 0.1 : -0.4;
@@ -209,7 +210,9 @@ function addOns(primary: PlannedSession, ctx: ModuleCtx, modules: TrainingModule
   const mob = modules.find((m) => m.id === 'mobility');
   if (!mob) return [];
   const qs = mob.quickStarts(ctx);
-  const warm = qs.find((q) => q.id === 'animal')?.session;
+  // After a hip replacement (until cleared): no animal moves, no core add-on – the rehab programme covers it.
+  const cautious = rehabCautious(ctx.profile, ctx.now);
+  const warm = cautious ? undefined : qs.find((q) => q.id === 'animal')?.session;
   const after = qs.find((q) => q.id === 'micro')?.session;
   // Always recommended – the habit matters more than the minutes. `fits` says whether it fits today's time.
   let spare = ctx.checkin.minutes - primary.minutes;
@@ -225,7 +228,7 @@ function addOns(primary: PlannedSession, ctx: ModuleCtx, modules: TrainingModule
     if (fits) spare -= after.minutes;
   }
   // Core: after every other gym or running session.
-  if (coreDue(ctx, primary)) {
+  if (!cautious && coreDue(ctx, primary)) {
     const core = coreSession(ctx);
     out.push({ when: 'efter', label: 'Bålpass', hint: `${core.minutes} min · mage och rygg, vartannat pass`, session: core, fits: spare >= core.minutes });
   }

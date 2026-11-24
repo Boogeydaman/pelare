@@ -43,12 +43,47 @@ export const runProgramId = (profile: Profile) => profile.enrollments.run?.progr
 /** Distance programs (first 10/15/20 km) need at least three runs a week to work. */
 export const isDistanceProgram = (id: string) => id === '10k' || id === '15k' || id === '20k';
 
+// ---------------------------------------------------------------- Hip replacement rehab
+
+export const REHAB_PHASES = [
+  { n: 1, name: 'Första veckorna', weeks: [0, 3], gym: 7, walks: 0 },
+  { n: 2, name: 'Rörelse och gång', weeks: [3, 6], gym: 5, walks: 0 },
+  { n: 3, name: 'Bygga styrka', weeks: [6, 12], gym: 3, walks: 3 },
+  { n: 4, name: 'Tillbaka till styrketräning', weeks: [12, 26], gym: 3, walks: 3 },
+  { n: 5, name: 'Långsiktig styrka', weeks: [26, Infinity], gym: 0, walks: 3 },
+] as const;
+
+export const weeksSinceSurgery = (profile: Profile, now = new Date()) =>
+  profile.rehab ? Math.max(0, (now.getTime() - new Date(`${profile.rehab.surgery}T12:00:00`).getTime()) / (7 * 864e5)) : 0;
+
+/** Rehab phase 1–5 from the weeks since surgery (or the phase you chose to stay in), null when not in rehab. */
+export function rehabPhase(profile: Profile, now = new Date()): number | null {
+  const r = profile.rehab;
+  if (!r || r.ended || r.kind !== 'hip') return null;
+  const w = weeksSinceSurgery(profile, now);
+  const byTime = REHAB_PHASES.find((p) => w >= p.weeks[0] && w < p.weeks[1])?.n ?? 5;
+  return r.holdPhase && r.holdPhase < byTime ? r.holdPhase : byTime;
+}
+/** In rehab and not yet cleared for free training: deep hip stretches, running and jumps are left out. */
+export const rehabCautious = (profile: Profile, now = new Date()) => {
+  const ph = rehabPhase(profile, now);
+  return ph !== null && (ph < 5 || !profile.rehab?.cleared);
+};
+
 /** Runs a week in each running program (the distance programs vary a little by week). */
-export const RUN_PER_WEEK: Record<string, number> = { start: 3, '5k': 3, '10k': 3, '15k': 4, '20k': 4, maintain: 2 };
-export const runsPerWeekOf = (profile: Profile) => RUN_PER_WEEK[runProgramId(profile)] ?? 3;
+export const RUN_PER_WEEK: Record<string, number> = { start: 3, '5k': 3, '10k': 3, '15k': 4, '20k': 4, maintain: 2, walk: 4 };
+export const runsPerWeekOf = (profile: Profile) => {
+  const id = runProgramId(profile);
+  const ph = rehabPhase(profile);
+  if (id === 'walk' && ph) return REHAB_PHASES[ph - 1].walks;
+  return RUN_PER_WEEK[id] ?? 3;
+};
 
 /** Gym sessions a week: the user's own choice. Older profiles without it get what their total used to give. */
 export function gymDaysOf(profile: Profile): number {
+  // In hip rehab the phase decides how often (short daily sessions early on).
+  const ph = rehabPhase(profile);
+  if (ph && ph < 5) return REHAB_PHASES[ph - 1].gym;
   if (profile.gymDays !== undefined) return profile.gymDays;
   const D = profile.daysPerWeek;
   return Math.max(2, Math.min(4, D - Math.max(1, Math.min(3, Math.floor(D / 2)))));

@@ -56,7 +56,8 @@ describe('Programmen', () => {
   const groups: Record<string, Muscle[]> = { bröst: ['chest'], rygg: ['lats', 'upper_back'], framsida: ['quads'], baksida: ['hamstrings', 'glutes'] };
 
   it('träffar bröst, rygg och ben minst två gånger i veckan', () => {
-    for (const p of PROGRAMS) {
+    // The hip rehab programme is phase-based and hip-focused, tested on its own below.
+    for (const p of PROGRAMS.filter((x) => x.id !== 'hip_rehab')) {
       const week = Array.from({ length: p.perWeek }, (_, i) => p.sessions[i % p.sessions.length]);
       for (const [name, muscles] of Object.entries(groups)) {
         const times = week.filter((s) => s.slots.some((x) => EX[x.ex].primary.some((m) => muscles.includes(m)))).length;

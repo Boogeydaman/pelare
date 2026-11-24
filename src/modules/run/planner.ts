@@ -3,7 +3,7 @@
 import { weekStart } from '../../core/format';
 import type { PlannedSession, Profile, RunSegment, SessionLog } from '../../core/types';
 import type { ModuleCtx } from '../types';
-import { isDistanceProgram, runProgramId } from '../common';
+import { isDistanceProgram, rehabPhase, runProgramId, weeksSinceSurgery } from '../common';
 
 const DAY = 864e5;
 export const HARD_TYPES = ['intervals', 'tempo', 'long', 'test'];
@@ -129,6 +129,7 @@ export function test5k(): PlannedSession {
 
 /** The next session for the week: walk-run for beginners, otherwise one interval session, one long run, the rest easy. */
 export function next(ctx: ModuleCtx): PlannedSession {
+  if (runProgramId(ctx.profile) === 'walk') return walkSession(ctx);
   const st = stage(ctx.profile, ctx.logs);
   const lastRun = runs(ctx.logs).reduce((m, l) => Math.max(m, new Date(l.startedAt).getTime()), 0);
   const gap = lastRun ? Math.floor((ctx.now.getTime() - lastRun) / DAY) : 0;
@@ -252,4 +253,25 @@ function distanceSession(ctx: ModuleCtx, g: Guard): PlannedSession | null {
     ...(lighter ? [{ text: 'Lättare vecka: kortare långpass så att kroppen hinner bygga upp sig inför nästa ökning.' }] : []),
     ...s.reasons,
   ] };
+}
+
+// ---------------------------------------------------------------- Walking and cycling (after a hip replacement)
+
+/**
+ * Walks that grow with the weeks after surgery. Walking and cycling are the recommended endurance
+ * training after a hip replacement; jogging only after the surgeon's go-ahead, usually at the earliest
+ * after 3–6 months (vårdförloppet, Region Dalarna, return-to-sport reviews).
+ */
+export function walkSession(ctx: ModuleCtx): PlannedSession {
+  const ph = rehabPhase(ctx.profile, ctx.now) ?? 5;
+  const w = weeksSinceSurgery(ctx.profile, ctx.now);
+  const done = runs(ctx.logs).filter((l) => l.type === 'walk' && ctx.now.getTime() - new Date(l.startedAt).getTime() < 14 * DAY).length;
+  const base = ph <= 2 ? 10 : ph === 3 ? 15 + Math.min(15, Math.floor((w - 6) * 2.5)) : ph === 4 ? 30 + Math.min(15, Math.floor((w - 12) * 1.2)) : 45;
+  const m = Math.round(Math.min(ctx.checkin.minutes, base + (done >= 6 ? 5 : 0)));
+  return plan('walk', ph >= 3 && w >= 3 ? 'Promenad eller motionscykel' : 'Promenad', [seg('Promenad i lugn takt', 3, 'gå'), seg('Rask promenad', Math.max(5, m - 5), 'gå'), seg('Lugn takt hem', 2, 'gå')],
+    `${m} min promenad – eller cykel`, [
+      `Fas ${ph} efter höftoperationen: promenader och cykel är den bästa konditionsträningen nu.`,
+      'Gå i en takt där du kan prata. Använd kryckor eller stav så länge du behöver dem – det ger en jämnare gång.',
+      ph < 5 ? 'Löpning och hopp väntar tills din kirurg har gett klartecken, oftast tidigast efter 3–6 månader.' : 'Har din kirurg gett klartecken kan du byta till ett löpprogram under Löpning → Program.',
+    ]);
 }
