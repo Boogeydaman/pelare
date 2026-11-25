@@ -8,9 +8,10 @@ import { EX, EXERCISES, GROUPS, MUSCLES, MUSCLE_NAME, type Exercise, type Need }
 import { PROGRAMS, PROGRAM_BY_ID } from './programs';
 import { build, history, nextTemplate, programOf, weekVolume, weeklyTarget } from './planner';
 import { HOWTO } from './howto';
-import { GymPlayer } from './Player';
 import { GymDiary, GymProgramExtra, GymSplitNotice } from './diary';
-import { coreSession } from './core';
+import { coreSession, nextAbWorkout } from './core';
+import { AB_WORKOUTS, abSession } from './abs';
+import { GymOrCircuit } from './GymOrCircuit';
 import { hipAdjust } from './hip';
 import { GymLibraryActions, isCustom } from './custom';
 import { Link } from 'react-router-dom';
@@ -84,6 +85,8 @@ export const gym: TrainingModule = {
     })() },
     { id: 'bw', label: 'Kort hemmapass', hint: '20 min · 40 s arbete, 20 s vila', session: build({ ...ctx, checkin: { ...ctx.checkin, place: 'travel' } }, PROGRAM_BY_ID.home20.sessions[0]) },
     { id: 'core', label: 'Bålpass', hint: '6–10 min · mage och rygg', session: coreSession(ctx) },
+    { id: 'abs', label: 'Bålpass – följ med', hint: `${nextAbWorkout(ctx).minutes} min · på tid, utan redskap`, session: abSession(nextAbWorkout(ctx)) },
+    { id: 'abs20', label: 'Hela magen', hint: '20 min · 20 övningar, 45 s arbete och 15 s vila', session: abSession(AB_WORKOUTS[3]) },
     { id: 'log', label: 'Logga i efterhand', hint: 'Ett pass du redan har gjort', to: '/gym/logga' },
   ],
   weekly: (ctx) => ({ done: thisWeek(ctx, 'gym').length, target: gymDaysOf(ctx.profile), unit: 'pass' }),
@@ -137,12 +140,13 @@ export const gym: TrainingModule = {
   load(l) {
     if (l.type.startsWith('core')) return { upper: 0.1 }; // short core session: not a hard day
     if (/^hip[1-3]_/.test(l.type)) return { legs: 0.3 }; // early hip rehab: gentle, not a hard day
+    if (l.data?.kind === 'circuit') return {}; // follow-along abs: light, quick recovery
     if (l.data?.kind !== 'strength') return { hard: true };
     const m = l.data.exercises.flatMap((e) => EX[e.id]?.primary ?? []);
     return { legs: m.some((x) => ['quads', 'hamstrings', 'glutes'].includes(x)) ? 0.8 : 0.1, upper: m.some((x) => ['chest', 'lats', 'upper_back'].includes(x)) ? 0.8 : 0.1, hard: true };
   },
 
-  Player: GymPlayer,
+  Player: GymOrCircuit,
   LogForm,
   ProgressExtra: GymExerciseList,
   LibraryExtra: GymLibraryExtra,

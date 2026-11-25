@@ -83,12 +83,15 @@ export interface StrengthItem {
   warmup?: { kg: number; reps: number }[]; // ramp-up sets before the first working set
 }
 export interface RunSegment { label: string; seconds: number; effort: 'gå' | 'lugnt' | 'hårt' | 'vila' }
+/** One interval in a follow-along workout: work for `seconds` (split per side when sides = 2), then rest. */
+export interface CircuitItem { id: string; name: string; cue: string; seconds: number; rest: number; sides?: 2; label?: string }
 export interface HoldItem { id: string; name: string; seconds: number; sides: 1 | 2; rounds: number; cue: string }
 
 export type Content =
   | { kind: 'strength'; items: StrengthItem[] }
   | { kind: 'run'; segments: RunSegment[] }
   | { kind: 'mobility'; holds: HoldItem[] }
+  | { kind: 'circuit'; items: CircuitItem[] }
   | { kind: 'rest'; text: string };
 
 export interface PlannedSession {
@@ -113,6 +116,7 @@ export type LogData =
   | { kind: 'strength'; exercises: ExerciseResult[] }
   | { kind: 'run'; distanceKm?: number; segmentsDone?: number; zone?: { green: number; fast: number; slow: number }; splits?: number[] } // zone: seconds in/over/under the target pace; splits: seconds per km
   | { kind: 'mobility'; holdsDone: number }
+  | { kind: 'circuit'; done: number; total: number }
   | { kind: 'other'; activity: string };
 
 export interface SessionLog {

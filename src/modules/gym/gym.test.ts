@@ -278,3 +278,30 @@ describe('Instruktioner och figurer', () => {
     }
   });
 });
+
+describe('Bålpass att följa med', () => {
+  it('varje övning har tre steg och en figur, och passen håller utlovad tid', async () => {
+    const { ABS, AB_WORKOUTS, circuitMinutes } = await import('./abs');
+    for (const [id, a] of Object.entries(ABS)) {
+      expect(a.how.length, id).toBe(3);
+      expect(ANIMS[a.anim], `${id} → ${a.anim}`).toBeDefined();
+    }
+    for (const w of AB_WORKOUTS) {
+      for (const x of w.items) expect(ABS[x.id], `${w.type}: ${x.id}`).toBeDefined();
+      expect(circuitMinutes(w.items), w.title).toBe(w.minutes);
+      expect(w.type.startsWith('core_abs')).toBe(true);
+      expect(w.items[w.items.length - 1].rest, `${w.title}: ingen vila efter sista`).toBe(0);
+    }
+  });
+
+  it('tvåsidiga övningar delas på mitten, och bålpassen växlar mellan set och följ med', async () => {
+    const { circuitSteps } = await import('./CircuitPlayer');
+    const steps = circuitSteps([{ id: 'side_plank_dip', name: 'x', cue: '', seconds: 44, rest: 15, sides: 2 }]);
+    expect(steps.map((s) => s.seconds)).toEqual([22, 22]);
+    expect(steps[1].rest).toBe(15);
+    const { coreSession } = await import('./core');
+    const cx = (n: number) => ctx({ logs: Array.from({ length: n }, (_, i) => ({ id: `c${i}`, module: 'gym' as const, type: i % 2 ? 'core_abs5' : 'core_a', title: '', startedAt: '2026-11-20T10:00:00', minutes: 8 })) });
+    expect(coreSession(cx(0)).content.kind).toBe('strength');
+    expect(coreSession(cx(1)).content.kind).toBe('circuit');
+  });
+});

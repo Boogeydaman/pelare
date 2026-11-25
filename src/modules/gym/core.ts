@@ -7,6 +7,7 @@ import type { ModuleCtx } from '../types';
 import { EX } from './exercises';
 import type { SessionTemplate } from './programs';
 import { build } from './planner';
+import { AB_WORKOUTS, abSession } from './abs';
 
 export const isCore = (l: Pick<SessionLog, 'module' | 'type'>) => l.module === 'gym' && l.type.startsWith('core');
 
@@ -17,10 +18,20 @@ export const CORE: SessionTemplate[] = [
   { type: 'core_c', title: 'Bålpass: hela bålen', slots: [s('hanging_knee', 2), s('side_plank', 2, 'Per sida.'), s('dead_bug', 2, 'Per sida.')] },
 ];
 
-/** Next core session in the rotation, fitted to today's equipment. */
+/** The short follow-along ab workouts, in turn (the 20-minute one is a quick start of its own). */
+const SHORT_ABS = AB_WORKOUTS.filter((w) => w.minutes <= 10);
+export function nextAbWorkout(ctx: ModuleCtx) {
+  return SHORT_ABS[ctx.logs.filter((l) => l.module === 'gym' && l.type.startsWith('core_abs')).length % SHORT_ABS.length];
+}
+
+/**
+ * Next core session in the rotation: sets and reps (front/sides, stability, whole core) take turns with a
+ * follow-along workout on the clock – variety, and both strength and endurance for the abs.
+ */
 export function coreSession(ctx: ModuleCtx): PlannedSession {
   const done = ctx.logs.filter(isCore).length;
-  const tpl = CORE[done % CORE.length];
+  if (done % 2 === 1) return abSession(nextAbWorkout(ctx));
+  const tpl = CORE[Math.floor(done / 2) % CORE.length];
   const p = build(ctx, tpl, { minutes: 10, reasons: [
     'Kort bålpass efter vartannat pass – magmusklerna återhämtar sig snabbt och svarar bäst på korta, täta doser.',
     'Roterar mellan framsida, sidor och stabilitet, så hela bålen får sitt varje vecka.',

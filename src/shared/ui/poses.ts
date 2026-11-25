@@ -513,3 +513,18 @@ ANIMS.step_down = { view: 'front', anchor: null, ms: 1500,
     { torso: -90, legs: [[86, 92], [100, 82]], arms: [[78, 86], [150, 120]], on: ['F', 88] },
     { torso: -90, legs: [[68, 116], [104, 96]], arms: [[78, 86], [150, 120]], on: ['F', 88] },
   ] };
+
+// ======================================================== Follow-along abs (src/modules/gym/abs.ts)
+const lie = (x: Partial<Spec> = {}): Spec => ({ torso: 180, head: 180, legs: [[0, 0], [2, 0]], arms: [[8, 4]], ...x });
+ANIMS.reverse_crunch = { ms: 1400, frames: [lie({ legs: [[-80, 10], [-78, 12]] }), lie({ torso: 196, head: 192, legs: [[-128, -40], [-126, -38]] })] };
+ANIMS.leg_raise = { ms: 1600, frames: [lie({ legs: [[-6, -6], [-4, -4]] }), lie({ legs: [[-86, -86], [-84, -84]] })] };
+ANIMS.flutter = { ms: 700, frames: [lie({ head: 196, legs: [[-12, -12], [-32, -32]] }), lie({ head: 196, legs: [[-32, -32], [-12, -12]] })] };
+ANIMS.v_up = { ms: 1500, frames: [lie({ torso: 186, head: 190, legs: [[-8, -8], [-6, -6]], arms: [[186, 186]] }), lie({ torso: 228, head: 232, legs: [[-52, -52], [-50, -50]], arms: [[-40, -40]] })] };
+ANIMS.roll_up = { ms: 2000, hold: 0.2, frames: [lie({ arms: [[-90, -90]] }), lie({ torso: 252, head: 262, arms: [[-14, -10]] })] };
+ANIMS.seated_tuck = { ms: 1300, frames: [lie({ torso: 228, head: 236, legs: [[-18, -18], [-16, -16]], arms: [[110, 110]] }), lie({ torso: 240, head: 246, legs: [[-55, 55], [-53, 57]], arms: [[110, 110]] })] };
+ANIMS.twist = { ms: 1100, frames: [lie({ torso: 232, head: 236, legs: [[-40, 25], [-38, 27]], arms: [[60, 100]] }), lie({ torso: 232, head: 226, legs: [[-40, 25], [-38, 27]], arms: [[10, -20]] })] };
+ANIMS.climber = { anchor: null, ms: 900, frames: [
+  { x: 62, torso: -8, head: -5, legs: [[175, 175], [70, 160]], arms: [[90, 0]] },
+  { x: 62, torso: -8, head: -5, legs: [[70, 160], [175, 175]], arms: [[90, 0]] },
+] };
+ANIMS.bicycle = { ms: 1200, frames: [lie({ torso: 204, head: 214, legs: [[-60, 30], [-8, -8]], arms: [[-20, 200]] }), lie({ torso: 204, head: 214, legs: [[-8, -8], [-60, 30]], arms: [[-20, 200]] })] };

@@ -4,6 +4,20 @@ import { fmtClock, fmtNum } from '../../core/format';
 import { ExerciseHow } from '../ui/ExerciseHow';
 import type { Content, LogData, PlannedSession } from '../../core/types';
 import { MODULE_NAME } from '../ui/kit';
+import { Figure } from '../ui/Figure';
+import { ABS } from '../../modules/gym/abs';
+
+/** How a follow-along ab exercise is done: figure and three steps. */
+export function AbHow({ id }: { id: string }) {
+  const a = ABS[id];
+  if (!a) return null;
+  return (
+    <div className="pb-3">
+      <div className="mx-auto w-full max-w-[11rem]"><Figure anim={a.anim} kind="gym" label={a.name} size="sm" /></div>
+      <ol className="mt-3">{a.how.map((t, k) => <li key={k} className="flex gap-3 border-t border-rule py-2.5 text-[15px] leading-snug"><span className="num w-4 shrink-0 text-ink2">{k + 1}</span><span>{t}</span></li>)}</ol>
+    </div>
+  );
+}
 
 /** What a planned session contains – exercises, segments or stretches. */
 export function ContentList({ content }: { content: Content }) {
@@ -36,6 +50,11 @@ export function ContentList({ content }: { content: Content }) {
         <span className="num text-[15px] text-ink2">{h.rounds > 1 ? `${h.rounds} × ` : ''}{h.seconds} s{h.sides === 2 ? ' / sida' : ''}</span>,
         <ExerciseHow module="mobility" id={h.id} name={h.name} compact />,
       ))}
+      {content.kind === 'circuit' && content.items.map((x, i) => row(i,
+        <><span className="num w-5 text-[14px] text-ink2">{i + 1}</span><span className="text-[17px] font-medium">{x.name}{x.label ? ` · ${x.label.toLowerCase()}` : ''}</span></>,
+        <span className="num text-[15px] text-ink2">{x.seconds} s{x.sides ? ' (halva per sida)' : ''}{x.rest ? ` + ${x.rest} s vila` : ''}</span>,
+        <AbHow id={x.id} />,
+      ))}
       {content.kind === 'rest' && <li className="border-t border-rule py-4 text-[17px]">{content.text}</li>}
     </ol>
   );
@@ -58,6 +77,7 @@ export function ResultList({ data }: { data?: LogData }) {
   }
   if (data.kind === 'run') return <p className="border-t border-rule py-3 text-[17px]">{data.distanceKm ? `${fmtNum(data.distanceKm)} km` : 'Ingen distans angiven'}</p>;
   if (data.kind === 'mobility') return <p className="border-t border-rule py-3 text-[17px]">{data.holdsDone} stretchar</p>;
+  if (data.kind === 'circuit') return <p className="border-t border-rule py-3 text-[17px]">{data.done} av {data.total} övningar</p>;
   return <p className="border-t border-rule py-3 text-[17px]">{data.activity}</p>;
 }
 
