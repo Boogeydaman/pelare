@@ -1,6 +1,7 @@
 import { BookOpen, CircleUser, ClipboardList, Gauge, Sun } from 'lucide-react';
 import { useCtx } from '../../core/ctx';
 import { inRehab } from '../../rehab/state';
+import { setRehabTheme } from '../../core/theme';
 import { useEffect } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useActive } from '../../core/db';
@@ -29,6 +30,7 @@ export function TabLayout() {
   const rehab = inRehab(ctx?.profile, ctx?.now);
   const tabs = rehab ? REHAB_TABS : TABS;
   useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  useEffect(() => { setRehabTheme(rehab); }, [rehab]);
 
   return (
     <div className="min-h-full">

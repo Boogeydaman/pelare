@@ -17,6 +17,7 @@ import { Row } from '../shared/layout/page';
 import { IconButton, Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
 
 const FEELING: Record<Feeling, string> = { pigg: 'Pigg', okej: 'Okej', trott: 'Trött', sjuk: 'Sjuk' };
+const greeting = (d: Date) => { const h = d.getHours(); return h < 5 ? 'God natt.' : h < 10 ? 'God morgon.' : h < 17 ? 'Hej.' : 'God kväll.'; };
 
 export function Today() {
   const ctx = useCtx();
@@ -43,13 +44,14 @@ export function Today() {
 
   return (
     <div>
-      <header className="flex items-start justify-between pt-2">
-        <Link to="/du" className="flex items-end gap-4" aria-label="Veckan">
-          <Pillars week={view.week} />
-          <span className="pb-0.5 text-[15px] text-ink2">{fmtDayLong(ctx.now)}</span>
-        </Link>
+      <header className="flex items-center justify-between pt-2">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.14em] text-ink2">{fmtDayLong(ctx.now)}</span>
         <IconButton ariaLabel="Inställningar" onClick={() => nav('/installningar')}><Settings2 size={22} strokeWidth={1.75} /></IconButton>
       </header>
+      <div className="mt-2 flex items-center justify-between gap-4">
+        <h1 className="font-serif text-[40px] leading-[1.02]">{greeting(ctx.now)}<br /><span className="text-ink2">Dag {((ctx.now.getDay() + 6) % 7) + 1} av 7.</span></h1>
+        <Link to="/du" aria-label="Veckan" className="shrink-0"><Pillars week={view.week} /></Link>
+      </div>
 
       <button onClick={() => setFormOpen(true)} className="mt-4 flex w-full items-center justify-between rounded-2xl bg-ink/[0.05] px-4 py-2.5 text-left">
         <span>
@@ -63,9 +65,9 @@ export function Today() {
       <SampleBanner />
       <div className="mt-4 empty:hidden"><InstallCard /></div>
 
-      <section key={main.id} className="rise mt-7">
+      <section key={main.id} className="hero rise mt-6 rounded-[28px] px-5 pb-5 pt-5">
         <Kicker kind={main.module}>{main.id === view.today.primary.id ? 'Dagens pass' : 'Ditt val'} · {MODULE_NAME[main.module]}</Kicker>
-        <h1 className="mt-2 font-serif text-[40px] leading-[1.02]">{main.title}</h1>
+        <h2 className="mt-2 font-serif text-[38px] leading-[1.02]">{main.title}</h2>
         <Meta s={main} className="mt-2" />
         <ul className="mt-4">
           {main.reasons.slice(0, 3).map((r, i) => <li key={i} className="border-t border-rule py-2 text-[15px] leading-snug">{r.text}</li>)}
@@ -73,6 +75,11 @@ export function Today() {
         <button onClick={() => setPeek(true)} className="flex min-h-[44px] w-full items-center gap-1 border-t border-rule text-[15px] font-medium">
           Visa hela passet <ChevronRight size={18} strokeWidth={1.75} />
         </button>
+        <div className="mt-3">
+          {active
+            ? <Primary onClick={() => nav('/pass')}><Play size={18} fill="currentColor" /> Fortsätt: {active.plan.title}</Primary>
+            : <Primary onClick={() => start(main)}><Play size={18} fill="currentColor" /> Starta</Primary>}
+        </div>
       </section>
 
       {(main.module === 'gym' || main.module === 'run') && view.today.addOns.length > 0 && (
@@ -129,12 +136,7 @@ export function Today() {
         </div>
       </section>
 
-      <div className="h-24" />
-      <div className="safe-bottom fixed inset-x-0 bottom-[58px] z-20 mx-auto max-w-lg bg-gradient-to-t from-paper via-paper/95 to-transparent px-6 pb-3 pt-8">
-        {active
-          ? <Primary kind={active.plan.module === 'rest' ? 'rest' : active.plan.module} onClick={() => nav('/pass')}><Play size={18} fill="currentColor" /> Fortsätt: {active.plan.title}</Primary>
-          : <Primary kind={main.module} onClick={() => start(main)}><Play size={18} fill="currentColor" /> Starta</Primary>}
-      </div>
+      <div className="h-8" />
 
       <Sheet open={peek} onClose={() => setPeek(false)} title={main.title}>
         <div className="max-h-[60vh] overflow-y-auto pb-4">

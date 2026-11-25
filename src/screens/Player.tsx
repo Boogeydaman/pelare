@@ -6,7 +6,8 @@ import { saveSession, setActive, uid, useActive } from '../core/db';
 import { fmtClock } from '../core/format';
 import type { Feel, LogData, SessionLog } from '../core/types';
 import { MODULE, MODULE_LIST } from '../modules/registry';
-import { Dim, ON, OnButton, useHold } from '../shared/player/parts';
+import { ACCENT, Dim, ON, OnButton, useHold } from '../shared/player/parts';
+import { inRehab } from '../rehab/state';
 import { RunSummary } from '../modules/run/summary';
 import { useTick, useWakeLock } from '../shared/ui/hooks';
 import { Kicker, MODULE_NAME, Pillars, Primary, Segmented, Sheet, color, type WeekProgress } from '../shared/ui/kit';
@@ -27,13 +28,19 @@ export function PlayerPage() {
     nav('/pass/klart', { replace: true });
   }, [active, nav]);
 
+  const ctx = useCtx();
+  const rehab = inRehab(ctx?.profile, ctx?.now);
   if (active === undefined) return null;
   if (active === null) return <Navigate to="/idag" replace />;
   const { plan } = active;
   const Body = plan.module === 'rest' ? null : MODULE[plan.module].Player;
 
   return (
-    <div className="fixed inset-0 flex flex-col overflow-y-auto" style={{ background: color(plan.module), color: ON }}>
+    <div className="fixed inset-0 flex flex-col overflow-y-auto bg-paper" style={rehab ? { background: color(plan.module), color: ON } : {
+      // The page colour tinted with the pillar; ink text, pillar accent. Rehab mode keeps its full-colour player.
+      backgroundImage: `linear-gradient(${color(plan.module, 0.1)}, ${color(plan.module, 0.1)})`, color: 'rgb(var(--ink))',
+      ['--onpillar' as string]: 'var(--ink)', ['--accent' as string]: plan.module === 'rest' ? 'var(--ink2)' : `var(--${plan.module})`, ['--on-accent' as string]: 'var(--paper)',
+    }}>
       <div className="safe-top safe-bottom mx-auto flex w-full max-w-lg flex-1 flex-col px-6">
         <header className="flex items-center justify-between py-2">
           <button {...close.handlers} aria-label="Avsluta passet" className="relative -m-2 flex h-12 w-12 touch-none select-none items-center justify-center rounded-full" style={close.progress ? { background: `rgb(var(--onpillar) / ${0.1 + close.progress * 0.3})` } : undefined}><X size={24} strokeWidth={1.75} /></button>
@@ -41,7 +48,7 @@ export function PlayerPage() {
           <Elapsed since={active.startedAt} />
         </header>
         <div className="mt-2 h-[3px] overflow-hidden rounded-full" style={{ background: 'rgb(var(--onpillar) / 0.25)' }}>
-          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress * 100}%`, background: ON }} />
+          <div className="h-full rounded-full transition-all duration-300" style={{ width: `${progress * 100}%`, background: ACCENT }} />
         </div>
         <main className="flex flex-1 flex-col pt-8">
           {Body ? <Body plan={plan} storageKey={`${plan.id}:${active.startedAt}`} onProgress={setProgress} onFinish={finish} /> : (

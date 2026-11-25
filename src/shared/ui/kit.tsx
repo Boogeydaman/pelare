@@ -53,8 +53,8 @@ export function IconButton({ children, onClick, ariaLabel, className = '' }: Btn
 /** Small sentence-case label above a section. */
 export function Kicker({ children, kind, className = '' }: { children: ReactNode; kind?: Kind; className?: string }) {
   return (
-    <div className={`flex items-center gap-2 text-[13px] font-medium text-ink2 ${className}`}>
-      {kind && <span className="h-2 w-2 rounded-full" style={{ background: color(kind) }} aria-hidden="true" />}
+    <div className={`flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink2 ${className}`}>
+      {kind && <span className="h-1.5 w-1.5 rounded-full" style={{ background: color(kind) }} aria-hidden="true" />}
       {children}
     </div>
   );
@@ -67,8 +67,9 @@ export function Rule({ className = '' }: { className?: string }) {
 // ---------------------------------------------------------------- Pillars (signature)
 
 /**
- * Three standing bars that fill up during the week.
- * `size` sm = inline on Idag, lg = hero on Vecka.
+ * The week as three concentric rings – gym outside, running in the middle, mobility inside – that close
+ * as the week fills up. `size` sm = in the header on I dag (with the total in the middle), lg = hero on
+ * Du and after a session (with the numbers per pillar beside it). `animateFrom` animates from before to after.
  */
 export function Pillars({ week, size = 'sm', animateFrom }: {
   week: WeekProgress; size?: 'sm' | 'lg'; animateFrom?: WeekProgress;
@@ -81,35 +82,55 @@ export function Pillars({ week, size = 'sm', animateFrom }: {
   }, [week, animateFrom]);
 
   const lg = size === 'lg';
-  const h = lg ? 168 : 44;
-  const w = lg ? 56 : 10;
+  const px = lg ? 176 : 92;
+  const sw = lg ? 13 : 7.5;
+  const gap = lg ? 4 : 2.5;
+  const done = MODULES.reduce((a, p) => a + Math.min(week[p].done, week[p].target), 0);
+  const target = MODULES.reduce((a, p) => a + week[p].target, 0);
+  const label = MODULES.map((p) => `${MODULE_NAME[p]} ${week[p].done} av ${week[p].target}`).join(', ');
 
-  return (
-    <div className={`flex items-end ${lg ? 'justify-between gap-6' : 'gap-1.5'}`} role="img"
-      aria-label={MODULES.map((p) => `${MODULE_NAME[p]} ${week[p].done} av ${week[p].target}`).join(', ')}>
-      {MODULES.map((p: ModuleId) => {
-        const { done, target } = shown[p];
-        const pct = target ? Math.min(1, done / target) : 0;
+  const rings = (
+    <svg width={px} height={px} viewBox={`0 0 ${px} ${px}`} className="shrink-0 -rotate-90" aria-hidden="true">
+      {MODULES.map((p: ModuleId, i) => {
+        const r = px / 2 - sw / 2 - i * (sw + gap);
+        const len = 2 * Math.PI * r;
+        const { done: d, target: t } = shown[p];
+        const pct = t ? Math.min(1, d / t) : 0;
         return (
-          <div key={p} className={`flex flex-col items-center ${lg ? 'flex-1 gap-3' : ''}`}>
-            <div className="relative overflow-hidden" style={{ height: h, width: lg ? '100%' : w, maxWidth: lg ? 88 : undefined, borderRadius: lg ? 14 : 3, background: color(p, 0.14) }}>
-              <div
-                className="absolute inset-x-0 bottom-0 ease-spring"
-                style={{ height: `${pct * 100}%`, background: color(p), borderRadius: lg ? 14 : 3, transition: 'height 700ms' }}
-              />
-              {lg && target > 1 && Array.from({ length: target - 1 }, (_, i) => (
-                <div key={i} className="absolute inset-x-0 border-t border-paper/60" style={{ bottom: `${((i + 1) / target) * 100}%` }} />
-              ))}
-            </div>
-            {lg && (
-              <div className="text-center">
-                <div className="num text-2xl font-semibold">{week[p].done}<span className="text-ink2">/{target}</span></div>
-                <div className="text-[13px] text-ink2">{MODULE_NAME[p]}</div>
-              </div>
-            )}
-          </div>
+          <g key={p}>
+            <circle cx={px / 2} cy={px / 2} r={r} fill="none" stroke={color(p, 0.16)} strokeWidth={sw} />
+            <circle cx={px / 2} cy={px / 2} r={r} fill="none" stroke={color(p)} strokeWidth={sw} strokeLinecap="round"
+              strokeDasharray={len} strokeDashoffset={len * (1 - pct)} style={{ transition: 'stroke-dashoffset 900ms cubic-bezier(0.34, 1.2, 0.64, 1)', opacity: pct ? 1 : 0 }} />
+          </g>
         );
       })}
+    </svg>
+  );
+
+  if (!lg) {
+    return (
+      <div className="relative" role="img" aria-label={label}>
+        {rings}
+        <div className="absolute inset-0 flex flex-col items-center justify-center">
+          <span className="num text-[19px] font-semibold leading-none">{done}<span className="text-ink2">/{target}</span></span>
+          <span className="mt-0.5 text-[10px] font-medium uppercase tracking-[0.12em] text-ink2">pass</span>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div className="flex items-center justify-between gap-6" role="img" aria-label={label}>
+      {rings}
+      <ul className="flex flex-1 flex-col gap-4">
+        {MODULES.map((p) => (
+          <li key={p}>
+            <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-ink2">
+              <span className="h-2 w-2 rounded-full" style={{ background: color(p) }} />{MODULE_NAME[p]}
+            </div>
+            <div className="num mt-0.5 text-[26px] font-semibold leading-none">{week[p].done}<span className="text-ink2">/{week[p].target}</span></div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

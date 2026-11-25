@@ -3,7 +3,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { beep, unlockAudio } from '../../shared/ui/sound';
 import { fmtClock, fmtNum, vibrate } from '../../core/format';
 import type { ExerciseResult, Feel, StrengthItem } from '../../core/types';
-import { Dim, ON, ON_DIM, ON_LINE, OnButton, RoundButton } from '../../shared/player/parts';
+import { Dim, ON, ON_DIM, ON_LINE, OnButton, RoundButton, ACCENT, ON_ACCENT } from '../../shared/player/parts';
 import { useCountdown } from '../../shared/ui/hooks';
 import { Figure } from '../../shared/ui/Figure';
 import { Ring, Sheet } from '../../shared/ui/kit';
@@ -176,7 +176,7 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
                   return next;
                 })}
                   className="num flex h-12 flex-1 items-center justify-center gap-1.5 rounded-xl text-[15px] font-semibold"
-                  style={on ? { background: ON, color: 'rgb(var(--ink))' } : { border: '1.5px solid rgb(var(--onpillar) / 0.45)' }}>
+                  style={on ? { background: ACCENT, color: ON_ACCENT } : { border: '1.5px solid rgb(var(--onpillar) / 0.45)' }}>
                   {on && <Check size={15} aria-hidden="true" />}{fmtNum(w.kg)} × {w.reps}
                 </button>
               );
@@ -202,7 +202,7 @@ export function GymPlayer({ plan, storageKey, onProgress, onFinish: finishOuter 
 
       <div className="mt-6 flex gap-2" aria-label={`Set ${set + 1} av ${it.sets}`}>
         {Array.from({ length: it.sets }, (_, i) => (
-          <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i <= set ? ON : ON_LINE, opacity: i < set ? 0.55 : 1 }} />
+          <div key={i} className="h-1.5 flex-1 rounded-full" style={{ background: i <= set ? ACCENT : ON_LINE, opacity: i < set ? 0.55 : 1 }} />
         ))}
       </div>
 

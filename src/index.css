@@ -22,34 +22,43 @@
 }
 
 /* Dark: warm near-black */
+/* Dark (default): deep warm charcoal, bone-white text, earthy pillars – terracotta, dove blue, sage.
+   Rehab mode keeps the system theme unless you choose one (src/core/theme.ts). */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --paper: 20 19 16;
-    --raised: 30 28 24;
-    --ink: 237 232 221;
-    --ink2: 156 151 139;
-    --rule: 48 45 39;
-    --gym: 224 122 85;
-    --run: 124 159 219;
-    --mobility: 141 184 146;
-  --rehab: 110 184 188;
+    --paper: 14 14 12;
+    --raised: 27 26 23;
+    --ink: 242 238 230;
+    --ink2: 140 135 125;
+    --rule: 42 41 37;
+    --gym: 217 138 95;
+    --run: 111 163 217;
+    --mobility: 143 191 138;
     --rehab: 110 184 188;
-    --onpillar: 20 19 16;
+    --onpillar: 14 14 12;
     color-scheme: dark;
   }
 }
 :root[data-theme='dark'] {
-  --paper: 20 19 16;
-  --raised: 30 28 24;
-  --ink: 237 232 221;
-  --ink2: 156 151 139;
-  --rule: 48 45 39;
-  --gym: 224 122 85;
-  --run: 124 159 219;
-  --mobility: 141 184 146;
-  --onpillar: 20 19 16;
+  --paper: 14 14 12;
+  --raised: 27 26 23;
+  --ink: 242 238 230;
+  --ink2: 140 135 125;
+  --rule: 42 41 37;
+  --gym: 217 138 95;
+  --run: 111 163 217;
+  --mobility: 143 191 138;
+  --rehab: 110 184 188;
+  --onpillar: 14 14 12;
   color-scheme: dark;
 }
+
+/* The hero card: the inverse of the page – bone on dark, ink on light – so the eye lands on today's session. */
+.hero { --paper: 27 26 23; --raised: 38 36 32; --ink: 243 239 230; --ink2: 168 162 151; --rule: 60 57 50; background: rgb(var(--paper)); color: rgb(var(--ink)); }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .hero { --paper: 242 238 230; --raised: 232 227 217; --ink: 20 19 16; --ink2: 104 99 89; --rule: 214 208 196; }
+}
+:root[data-theme='dark'] .hero { --paper: 242 238 230; --raised: 232 227 217; --ink: 20 19 16; --ink2: 104 99 89; --rule: 214 208 196; }
 
 html, body, #root { height: 100%; }
 

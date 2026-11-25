@@ -1,7 +1,10 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 
-// Building blocks for player screens, which sit on a module-coloured background.
+// Building blocks for player screens. The player is the page colour tinted with the pillar: text is ink
+// (the player sets --onpillar to ink), the pillar colour is the accent – solid buttons and progress.
 export const ON = 'rgb(var(--onpillar))';
+export const ACCENT = 'rgb(var(--accent, var(--onpillar)))';
+export const ON_ACCENT = 'rgb(var(--on-accent, var(--ink)))';
 export const ON_DIM = 'rgb(var(--onpillar) / 0.72)';
 export const ON_LINE = 'rgb(var(--onpillar) / 0.25)';
 
@@ -45,8 +48,8 @@ export function OnButton({ children, onClick, ghost, className = '', hold = fals
   return (
     <button {...h.handlers}
       className={`relative flex h-16 w-full touch-none select-none items-center justify-center gap-2 overflow-hidden rounded-full text-[18px] font-semibold transition active:scale-[0.98] ${className}`}
-      style={ghost ? { border: '1.5px solid rgb(var(--onpillar) / 0.5)', color: ON } : { background: ON, color: 'rgb(var(--ink))' }}>
-      {hold && <span className="absolute inset-y-0 left-0" style={{ width: `${h.progress * 100}%`, background: ghost ? 'rgb(var(--onpillar) / 0.25)' : 'rgb(var(--ink) / 0.15)' }} aria-hidden="true" />}
+      style={ghost ? { border: '1.5px solid rgb(var(--onpillar) / 0.5)', color: ON } : { background: ACCENT, color: ON_ACCENT }}>
+      {hold && <span className="absolute inset-y-0 left-0" style={{ width: `${h.progress * 100}%`, background: ghost ? 'rgb(var(--onpillar) / 0.25)' : 'rgb(var(--on-accent, var(--ink)) / 0.2)' }} aria-hidden="true" />}
       <span className="relative flex items-center gap-2">{children}</span>
     </button>
   );
