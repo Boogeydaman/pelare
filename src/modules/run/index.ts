@@ -19,7 +19,7 @@ const PROGRAMS: ProgramOption[] = [
     description: 'För dig som springer 10 km. Tre till fyra pass i veckan med ett långpass som växer från 55 till 90 minuter, en lättare vecka var fjärde vecka. Vecka 10 springer du 15 km.' },
   { id: '20k', name: 'Dina första 20 km', weeks: 12, perWeek: 4,
     description: 'För dig som springer 10 km bekvämt. Fyra pass i veckan med ett långpass som växer från 60 minuter till knappt två timmar, med lättare veckor emellan. Vecka 12 springer du 20 km.' },
-  { id: '5k', name: 'Snabbare 5 km', weeks: 8, perWeek: 3, description: 'För dig som redan springer 5 km. Två lugna pass och ett intervallpass i veckan.' },
+  { id: '5k', name: 'Snabbare 5 km', weeks: 8, perWeek: 3, description: 'För dig som redan springer 5 km. Tre pass i veckan: ett lugnt, ett med intervaller och ett långpass.' },
   { id: 'maintain', name: 'Underhåll', weeks: 4, perWeek: 2, description: 'Två lugna pass i veckan för att behålla formen.' },
   { id: 'walk', name: 'Promenad och cykel', weeks: 26, perWeek: 4, description: 'Efter en höftoperation: promenader som blir längre vecka för vecka, eller motionscykel. Löpning först efter klartecken från din kirurg.' },
 ];
@@ -48,6 +48,35 @@ function LogForm({ onSave }: LogFormProps) {
     onSave: (v) => onSave({ type: v.type, title: v.title, minutes: v.minutes, feel: v.feel, data: { kind: 'run', distanceKm: parseNum(v.vals.km ?? '') } }),
   });
 }
+
+/** What each kind of run is and why it is in the week. */
+export const RUN_ABOUT: Record<string, string> = {
+  easy: 'Lugnt pass: i ett tempo där du kan prata i hela meningar. Det är här det mesta byggs – hjärta, blodkärl, senor och skelett – med liten risk för skador. Det ska kännas för lätt.',
+  long: 'Långpass: veckans längsta runda, i samma lugna tempo som ett lugnt pass. Det bygger uthålligheten som gör att du orkar hela distansen, och vänjer ben och huvud vid längre tid. Långsamt är rätt – farten tränas på andra pass.',
+  intervals: 'Intervaller: korta hårda delar (till exempel 3–4 minuter) nära din 5 km-fart, med lugn jogg emellan. De höjer din maximala syreupptagning och gör farten lättare. Uppvärmning och nedjogg ingår.',
+  tempo: 'Tempopass: 12–20 minuter kontrollerat ansträngt – du kan säga några ord men inte prata. Det höjer tröskeln, den fart du kan hålla länge utan att mjölksyran tar över.',
+  strides: 'Lugnt med stegringar: ett lugnt pass med fem korta ökningar på 15–20 sekunder upp mot snabb fart. De gör steget lättare och snabbare utan att trötta ut dig.',
+  test: 'Testlopp: veckans mål – spring hela distansen i jämn fart. Resultatet uppdaterar dina tempozoner.',
+  walkrun: 'Gå-spring: korta löpintervaller med gångpauser. Pauserna är en del av passet – de låter senor och leder vänja sig medan konditionen växer.',
+};
+const RUN_WHY: Record<string, string> = {
+  start: 'Hjärta och lungor anpassar sig på några veckor, men senor, skelett och leder behöver längre tid. Därför ökar löpningen i små steg, och tre pass i veckan med vilodag emellan ger kroppen tid att bygga upp sig. Kändes ett pass tungt får du köra samma steg igen.',
+  '5k': 'Ungefär 80 % lugnt och 20 % hårt ger bäst resultat för de flesta löpare. Intervallerna gör dig snabbare, långpasset bygger uthålligheten som gör att du orkar hålla farten hela vägen, och det lugna passet ger mängd utan att slita. Det hårda passet ligger aldrig dagen efter ett annat löppass.',
+  distance: 'Långpasset växer med ungefär 10 % i veckan och är veckans viktigaste pass för distansen. Ett kvalitetspass – stegringar, tempo eller intervaller – höjer farten, och resten är lugnt så att du återhämtar dig. Var fjärde vecka är lättare så att kroppen hinner ta upp träningen, och sista veckan springer du distansen.',
+  maintain: 'Två lugna pass i veckan räcker för att behålla det mesta av formen. Vill du bli snabbare igen: byt till Snabbare 5 km.',
+  walk: 'Promenader och cykel bygger kondition utan stötar mot den nya höften. Längden ökar vecka för vecka; löpning först efter klartecken från din kirurg.',
+};
+const aboutTitle = (t: string) => {
+  const s = t.toLowerCase();
+  if (s.startsWith('långpass')) return RUN_ABOUT.long;
+  if (s.startsWith('lugnt +')) return RUN_ABOUT.strides;
+  if (s.startsWith('lugnt')) return RUN_ABOUT.easy;
+  if (s.startsWith('intervall')) return RUN_ABOUT.intervals;
+  if (s.startsWith('tempo')) return RUN_ABOUT.tempo;
+  if (s.startsWith('gå-spring')) return RUN_ABOUT.walkrun;
+  if (s.endsWith('km!')) return RUN_ABOUT.test;
+  return undefined;
+};
 
 const program = (ctx: ModuleCtx) => PROGRAMS.find((p) => p.id === ctx.profile.enrollments.run?.programId) ?? PROGRAMS[0];
 
@@ -96,7 +125,8 @@ export const run: TrainingModule = {
       const marks = [Math.round(n / 4), Math.round(n / 2), Math.round((3 * n) / 4), n];
       return {
         program: p, week: dw.index + 1, label: `Vecka ${dw.index + 1} av ${n}`,
-        thisWeek: titles.map((title, k) => ({ title, done: k < slotsOf(dw.week).length - dw.left.length })),
+        thisWeek: titles.map((title, k) => ({ title, done: k < slotsOf(dw.week).length - dw.left.length, about: aboutTitle(title) })),
+        why: RUN_WHY.distance,
         milestones: marks.map((m) => { const l = plan.weeks[m - 1].long; return { label: l === 'test' ? `${plan.km} km` : `${l} min`, done: dw.index + 1 > m }; }),
       };
     }
@@ -107,7 +137,8 @@ export const run: TrainingModule = {
     const titles = p.id === 'start' ? ['Gå-spring', 'Gå-spring', 'Gå-spring'] : p.id === 'maintain' ? ['Lugnt', 'Lugnt'] : ['Lugnt', 'Intervaller', 'Långpass'];
     return {
       program: p, week, label: p.id === 'start' && st !== 'done' ? `Steg ${st + 1} av ${STAGES.length}` : `Vecka ${week} av ${p.weeks}`,
-      thisWeek: titles.map((title, i) => ({ title, done: i < done })),
+      thisWeek: titles.map((title, i) => ({ title, done: i < done, about: aboutTitle(title) })),
+      why: RUN_WHY[p.id],
       milestones: p.id === 'start'
         ? [5, 10, 15, 20].map((n) => ({ label: `${STAGES[n - 1].run} min`, done: st === 'done' || st >= n }))
         : [{ label: 'Bas', done: week > 2 }, { label: 'Volym', done: week > 4 }, { label: 'Fart', done: week > 6 }, { label: 'Test', done: week >= p.weeks }],

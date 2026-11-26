@@ -114,7 +114,7 @@ export interface ExerciseResult { id: string; name: string; sets: SetResult[]; f
 
 export type LogData =
   | { kind: 'strength'; exercises: ExerciseResult[] }
-  | { kind: 'run'; distanceKm?: number; segmentsDone?: number; zone?: { green: number; fast: number; slow: number }; splits?: number[] } // zone: seconds in/over/under the target pace; splits: seconds per km
+  | { kind: 'run'; distanceKm?: number; segmentsDone?: number; zone?: { green: number; fast: number; slow: number }; splits?: number[]; intervals?: { seconds: number; meters: number }[] } // zone: seconds in/over/under the target pace; splits: seconds per km
   | { kind: 'mobility'; holdsDone: number }
   | { kind: 'circuit'; done: number; total: number }
   | { kind: 'other'; activity: string };
@@ -160,8 +160,9 @@ export interface ProgramView {
   program: ProgramOption;
   week: number; // 1-based
   label: string; // "Block 2 · vecka 3 av 6"
-  thisWeek: { title: string; done: boolean }[];
+  thisWeek: { title: string; done: boolean; about?: string }[]; // about: what the session is and why
   milestones: Milestone[];
+  why?: string; // why the week is built the way it is
 }
 
 export interface LibraryItem {

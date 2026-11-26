@@ -24,6 +24,8 @@ export interface TodayView {
   alternatives: PlannedSession[];
   addOns: AddOn[];
   notes: Reason[]; // rules that shaped today, shown under "Hänsyn i dag"
+  /** Today's main session(s) already done (gym, running, or something that replaced them) – the day is complete. */
+  doneToday: SessionLog[];
   week: WeekLine[];
   daysLeft: number; // including today
   aerobicMin: number; // this week, towards the health floor
@@ -91,7 +93,10 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   }
   const lightOnly = tired || hardToday || streak >= 2;
   const replacedToday = todayLogs.some((l) => l.replaces);
+  // The day's main work is done: say what that means for the rest of the day – not rules about today's own session.
+  const doneToday = todayLogs.filter((l) => !isCore(l) && (l.replaces || ((l.module === 'gym' || l.module === 'run') && l.type !== 'walk')));
   if (replacedToday) notes.push({ text: 'Du har tränat något annat i dag och det räknas som dagens pass. Inget mer behövs – vill du göra något blir det lugnt.' });
+  else if (doneToday.length) notes.push({ text: hardToday ? 'Dagens hårda pass är gjort. Resten av dagen är för återhämtning – en lugn promenad eller stretch går bra.' : 'Dagens pass är gjort. Vill du göra något mer blir det lugnt.' });
   else if (hardToday) notes.push({ text: 'Du har redan kört ett hårt pass i dag, så resten av dagen blir lugn.' });
   else if (streak >= 2) notes.push({ text: 'Två hårda dagar i rad. I dag blir det något lugnt så att kroppen hinner bygga upp sig.' });
   else if (tired) notes.push({ text: 'Du känner dig trött, så förslagen är lugna i dag.' });
@@ -172,11 +177,13 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   const ok = scored.filter((x) => !x.blocked).sort((a, b) => b.score - a.score);
   const blockedNotes = [...new Set(scored.filter((x) => x.blocked && x.blocked !== 'lugn dag').map((x) => x.blocked!))];
   for (const b of blockedNotes) {
+    // Blocks caused by today's own session are already covered by the note above.
+    if (doneToday.length && b.startsWith('benen behöver')) continue;
     if (b === 'löpning tre dagar i rad') notes.push({ text: 'Ingen löpning i dag: du har sprungit två dagar i rad. Senor och skelett behöver en vilodag för att hinna anpassa sig – det är där löparskadorna uppstår.', source: '19' });
     else if (b === 'löpning dag efter dag') notes.push({ text: 'Du sprang i går, så ingen löpning i dag. En vilodag mellan löppassen låter senor och skelett återhämta sig och sänker skaderisken – veckans löppass hinns ändå.', source: '19' });
     else notes.push({ text: `Inga hårda benpass eller hårda löppass i dag: ${b}.`, source: '16' });
   }
-  if (aerobicBehind) notes.push({ text: `Du har ${aerobicMin} av 150 minuters kondition den här veckan, så löpning väger lite tyngre i dag.`, source: '25' });
+  if (aerobicBehind && !doneToday.length) notes.push({ text: `Du har ${aerobicMin} av 150 minuters kondition den här veckan, så löpning väger lite tyngre i dag.`, source: '25' });
 
   const primary = withCoachReason(ok[0].s, week, daysLeft);
   const alternatives: PlannedSession[] = [];
@@ -186,7 +193,7 @@ export function coach(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   }
 
   return {
-    primary, alternatives, notes, week, daysLeft, aerobicMin,
+    primary, alternatives, notes, week, daysLeft, aerobicMin, doneToday,
     addOns: addOns(primary, ctx, modules),
     note: notes[0]?.text,
   };
@@ -249,7 +256,7 @@ function sickDay(ctx: ModuleCtx, modules: TrainingModule[]): TodayView {
   const alternatives = micro ? [{ ...micro, id: 'sick:stretch', title: 'Lätt stretch', reasons: [{ text: 'Bara om du känner för det och saknar feber.' }] }] : [];
   const week: WeekLine[] = modules.map((m) => { const w = m.weekly(ctx); return { module: m.id, name: m.name, done: w.done, target: w.target, unit: w.unit }; });
   return {
-    primary: rest, alternatives, addOns: [], week,
+    primary: rest, alternatives, addOns: [], week, doneToday: [],
     daysLeft: 7 - Math.floor((ctx.now.getTime() - weekStart(ctx.now).getTime()) / DAY),
     aerobicMin: 0,
     notes: [

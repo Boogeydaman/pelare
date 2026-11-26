@@ -53,8 +53,10 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
   const finished = useRef(false);
   // For the summary afterwards: seconds in, over and under the target pace, and each kilometre's time.
   const statsKey = `pelare.runstats:${storageKey}`;
-  const stats = useRef<{ green: number; fast: number; slow: number; last: number; splits: number[] }>((() => {
-    try { return { green: 0, fast: 0, slow: 0, last: 0, splits: [], ...JSON.parse(localStorage.getItem(statsKey) ?? '{}') }; } catch { return { green: 0, fast: 0, slow: 0, last: 0, splits: [] }; }
+  type Stats = { green: number; fast: number; slow: number; last: number; splits: number[]; intervals: { seconds: number; meters: number }[]; seg: { i: number; m: number; t?: number } };
+  const stats = useRef<Stats>((() => {
+    const empty: Stats = { green: 0, fast: 0, slow: 0, last: 0, splits: [], intervals: [], seg: { i: -1, m: 0 } };
+    try { return { ...empty, ...JSON.parse(localStorage.getItem(statsKey) ?? '{}') }; } catch { return empty; }
   })());
   const saveStats = () => { try { localStorage.setItem(statsKey, JSON.stringify(stats.current)); } catch { /* ignore */ } };
 
@@ -68,7 +70,8 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
     const zoneSec = st.green + st.fast + st.slow;
     onFinish({ kind: 'run', segmentsDone: done, ...(distanceKm ? { distanceKm } : {}),
       ...(zoneSec >= 60 ? { zone: { green: Math.round(st.green), fast: Math.round(st.fast), slow: Math.round(st.slow) } } : {}),
-      ...(st.splits.length ? { splits: st.splits.map(Math.round) } : {}) });
+      ...(st.splits.length ? { splits: st.splits.map(Math.round) } : {}),
+      ...(st.intervals.length ? { intervals: st.intervals.map((x) => ({ seconds: Math.round(x.seconds), meters: Math.round(x.meters) })) } : {}) });
   }, [key, statsKey, gps, onFinish]);
 
   // Segment changes: vibrate, and finish at the end.
@@ -132,6 +135,21 @@ export function RunPlayer({ plan, onProgress, onFinish, storageKey }: PlayerProp
     else if (status === 'slow' && held > 20000 && quiet > 45000) { z.said = now; speak(`Lite för lugnt. Öka mot ${sayPace(zone[0])}.`); }
     else if (status === 'green' && held > 20000 && quiet > 180000) { z.said = now; speak('Bra tempo, du ligger i det gröna.'); }
   }, [gps.pace, voiceOn, started, paused, zone?.[0], zone?.[1]]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Each hard interval: its distance over its planned time, for the interval breakdown afterwards.
+  useEffect(() => {
+    if (!started) return;
+    const st = stats.current;
+    if (st.seg.i === i) return;
+    const prev = segments[st.seg.i];
+    if (st.seg.i >= 0 && prev?.effort === 'hårt' && gpsOn) {
+      const m = gps.meters - st.seg.m;
+      // Actual time, so a skipped or cut interval still gets the right pace.
+      const sec = st.seg.t !== undefined ? Math.min(prev.seconds, (elapsed - st.seg.t) / 1000) : prev.seconds;
+      if (m > 20 && sec > 10) st.intervals.push({ seconds: sec, meters: m });
+    }
+    st.seg = { i, m: gps.meters, t: elapsed };
+    saveStats();
+  }, [i, started]); // eslint-disable-line react-hooks/exhaustive-deps
   // Every kilometre: distance and the time for the last one.
   const kmMark = useRef<{ km: number; at: number }>({ km: Math.floor(gps.meters / 1000), at: Date.now() });
   useEffect(() => {

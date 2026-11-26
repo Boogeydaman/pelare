@@ -1,4 +1,4 @@
-import { ChevronRight, Play, Plus, Settings2 } from 'lucide-react';
+import { Check, ChevronRight, Play, Plus, Settings2 } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { coach, type TodayView } from '../core/coach';
@@ -7,8 +7,9 @@ import { useCtx } from '../core/ctx';
 import { removeSampleData, saveCheckin, saveSession, uid, useActive } from '../core/db';
 import { fmtDayLong, isSameDay } from '../core/format';
 import { useStart } from '../core/start';
-import type { CheckIn, Feeling, ModuleId, PlannedSession } from '../core/types';
+import type { CheckIn, Feeling, ModuleId, PlannedSession, SessionLog } from '../core/types';
 import { MODULE_LIST } from '../modules/registry';
+import { RUN_ABOUT } from '../modules/run';
 import { ARTICLE, PRINCIPLE, articleFor } from '../core/articles';
 import { ContentList, Meta } from '../shared/layout/content';
 import { InstallCard } from '../shared/ui/InstallCard';
@@ -65,6 +66,11 @@ export function Today() {
       <SampleBanner />
       <div className="mt-4 empty:hidden"><InstallCard /></div>
 
+      {view.today.doneToday.length > 0 ? (
+        <DoneCard logs={view.today.doneToday} plan={view.plan} more={main.module !== 'rest' ? main : null} onMore={() => start(main)} />
+      ) : main.module === 'rest' ? (
+        <RestCard s={main} plan={view.plan} />
+      ) : (
       <section key={main.id} className="hero rise mt-6 rounded-[28px] px-5 pb-5 pt-5">
         <Kicker kind={main.module}>{main.id === view.today.primary.id ? 'Dagens pass' : 'Ditt val'} · {MODULE_NAME[main.module]}</Kicker>
         <h2 className="mt-2 font-serif text-[38px] leading-[1.02]">{main.title}</h2>
@@ -81,6 +87,7 @@ export function Today() {
             : <Primary onClick={() => start(main)}><Play size={18} fill="currentColor" /> Starta</Primary>}
         </div>
       </section>
+      )}
 
       {(main.module === 'gym' || main.module === 'run') && view.today.addOns.length > 0 && (
         <section className="mt-3 rounded-2xl px-4 py-3" style={{ background: color('mobility', 0.1) }}>
@@ -101,7 +108,7 @@ export function Today() {
         </section>
       )}
 
-      {main.module !== 'rest' && !ctx.logs.some((l) => isSameDay(l.startedAt, ctx.now) && (l.module === main.module || l.replaces)) && (
+      {main.module !== 'rest' && view.today.doneToday.length === 0 && !ctx.logs.some((l) => isSameDay(l.startedAt, ctx.now) && (l.module === main.module || l.replaces)) && (
         <button onClick={() => setOtherOpen(true)} className="mt-3 flex min-h-[44px] w-full items-center justify-between rounded-2xl border border-rule px-4 text-left text-[15px]">
           <span>Jag tränade något annat i dag</span><ChevronRight size={18} strokeWidth={1.5} className="text-ink2" aria-hidden="true" />
         </button>
@@ -120,7 +127,7 @@ export function Today() {
         </section>
       )}
 
-      <WhyToday kind={main.module} walk={main.type === 'walk'} />
+      {view.today.doneToday.length === 0 && <WhyToday kind={main.module} walk={main.type === 'walk'} />}
 
       <WeekLeft view={view.today} />
 
@@ -141,6 +148,7 @@ export function Today() {
       <Sheet open={peek} onClose={() => setPeek(false)} title={main.title}>
         <div className="max-h-[60vh] overflow-y-auto pb-4">
           <Meta s={main} className="mb-4" />
+          {main.module === 'run' && RUN_ABOUT[main.type] && <p className="mb-4 rounded-2xl bg-ink/[0.05] px-4 py-3 text-[15px] leading-snug">{RUN_ABOUT[main.type]}</p>}
           <ContentList content={main.content} />
         </div>
       </Sheet>
@@ -325,6 +333,66 @@ function SampleBanner() {
     <section className="mt-6 flex items-center justify-between gap-4 rounded-2xl border border-rule px-5 py-4">
       <p className="text-[15px] leading-snug">Du ser exempeldata så att skärmarna har något att visa. Ta bort den när du börjar träna på riktigt.</p>
       <button onClick={() => removeSampleData()} className="h-11 shrink-0 rounded-full bg-ink px-4 text-[14px] font-semibold text-paper">Ta bort</button>
+    </section>
+  );
+}
+
+const DAYNAME = ['måndag', 'tisdag', 'onsdag', 'torsdag', 'fredag', 'lördag', 'söndag'];
+
+/** The next day in the week plan with a planned gym or running session. */
+function nextPlanned(plan: WeekPlan): string | null {
+  const d = plan.days.find((x) => !x.past && !x.today && x.planned.length > 0);
+  if (!d) return null;
+  const what = d.planned.map((m) => MODULE_NAME[m].toLowerCase()).join(' och ');
+  const tomorrow = plan.days.find((x) => x.today)?.index;
+  return `${tomorrow !== undefined && d.index === tomorrow + 1 ? 'I morgon' : DAYNAME[d.index][0].toUpperCase() + DAYNAME[d.index].slice(1)}: ${what}`;
+}
+
+/** The day is done: a calm "well done" instead of another session. */
+function DoneCard({ logs, plan, more, onMore }: { logs: SessionLog[]; plan: WeekPlan; more: PlannedSession | null; onMore: () => void }) {
+  const next = nextPlanned(plan);
+  return (
+    <section className="rise mt-6 rounded-[28px] border border-rule bg-raised px-5 pb-5 pt-5">
+      <div className="flex items-center gap-3">
+        <span className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: color('mobility', 0.18), color: color('mobility') }}><Check size={20} aria-hidden="true" /></span>
+        <Kicker>Klart för i dag</Kicker>
+      </div>
+      <h2 className="mt-3 font-serif text-[38px] leading-[1.02]">Bra jobbat.</h2>
+      <ul className="mt-3">
+        {logs.map((l) => (
+          <li key={l.id}>
+            <Link to={`/logg/${l.id}`} className="flex min-h-[44px] items-center justify-between gap-3 border-t border-rule text-[15px]">
+              <span className="flex items-center gap-2"><span className="h-2 w-2 rounded-full" style={{ background: color(l.module) }} aria-hidden="true" />{l.title}</span>
+              <span className="num text-ink2">{l.minutes} min</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <p className="mt-3 text-[15px] leading-snug text-ink2">Vila resten av dagen – det är mellan passen kroppen blir starkare. En lugn promenad eller lite stretch går bra om du vill.</p>
+      {next && <p className="mt-2 text-[15px] font-medium">{next}</p>}
+      {more && (
+        <button onClick={onMore} className="mt-4 flex min-h-[48px] w-full items-center justify-between gap-3 rounded-2xl border border-rule px-4 text-left text-[15px]">
+          <span>Vill du göra mer? <span className="font-medium">{more.title}</span> · {more.minutes} min</span>
+          <ChevronRight size={18} className="shrink-0 text-ink2" aria-hidden="true" />
+        </button>
+      )}
+    </section>
+  );
+}
+
+/** A rest day before anything is done: calm, without a session to start. */
+function RestCard({ s, plan }: { s: PlannedSession; plan: WeekPlan }) {
+  const next = nextPlanned(plan);
+  return (
+    <section className="rise mt-6 rounded-[28px] border border-rule bg-raised px-5 pb-5 pt-5">
+      <Kicker>Vilodag</Kicker>
+      <h2 className="mt-2 font-serif text-[38px] leading-[1.02]">Vila i dag.</h2>
+      <ul className="mt-3">{s.reasons.slice(0, 2).map((r, i) => <li key={i} className="border-t border-rule py-2 text-[15px] leading-snug">{r.text}</li>)}</ul>
+      <p className="mt-2 text-[15px] leading-snug text-ink2">{s.content.kind === 'rest' ? s.content.text : ''}</p>
+      {next && <p className="mt-2 text-[15px] font-medium">{next}</p>}
+      <Link to="/logga" className="mt-4 flex min-h-[48px] items-center justify-between rounded-2xl border border-rule px-4 text-[15px]">
+        <span>Logga en promenad</span><ChevronRight size={18} className="text-ink2" aria-hidden="true" />
+      </Link>
     </section>
   );
 }

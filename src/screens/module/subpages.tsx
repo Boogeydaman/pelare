@@ -1,4 +1,4 @@
-import { Check, Search } from 'lucide-react';
+import { Check, Search, ChevronDown } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { saveProfile, saveSession, saveTest, uid } from '../../core/db';
@@ -42,10 +42,25 @@ export function ProgramPage({ m }: { m: TrainingModule }) {
       {m.ProgramExtra && <m.ProgramExtra />}
 
       <Section title="Den här veckan">
-        {view.thisWeek.map((s, i) => (
+        {view.thisWeek.map((s, i) => s.about ? (
+          <details key={i} className="group border-t border-rule">
+            <summary className="flex min-h-[56px] cursor-pointer list-none items-center justify-between gap-3 py-3">
+              <span className="text-[17px]">{s.title}</span>
+              <span className="flex items-center gap-2 text-[14px] text-ink2">{s.done ? <Check size={18} style={{ color: color(m.id) }} aria-label="Klart" /> : 'Kvar'}<ChevronDown size={16} className="transition group-open:rotate-180" aria-hidden="true" /></span>
+            </summary>
+            <p className="pb-4 text-[15px] leading-snug text-ink2">{s.about}</p>
+          </details>
+        ) : (
           <Row key={i} title={s.title} right={s.done ? <Check size={18} style={{ color: color(m.id) }} aria-label="Klart" /> : <span className="text-[14px]">Kvar</span>} />
         ))}
+        {view.thisWeek.some((s) => s.about) && <p className="pt-2 text-[13px] text-ink2">Tryck på ett pass för att se vad det innebär.</p>}
       </Section>
+
+      {view.why && (
+        <Section title="Varför veckan ser ut så här">
+          <p className="border-t border-rule pt-3 text-[16px] leading-snug">{view.why}</p>
+        </Section>
+      )}
 
       <Section title="Milstolpar">
         <ol className="flex items-start border-t border-rule pt-5" aria-label="Milstolpar">

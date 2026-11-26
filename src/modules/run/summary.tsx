@@ -14,7 +14,14 @@ export interface RunSummaryData {
   pace?: number;
   zone?: { green: number; fast: number; slow: number; pct: number };
   splits?: number[];
+  /** Interval and tempo sessions: each hard part's distance, time and pace – shown instead of km splits. */
+  reps?: { meters: number; seconds: number; pace: number }[];
+  repPace?: number; // average pace over the hard parts
 }
+
+const QUALITY = ['intervals', 'tempo'];
+const repsOf = (l: SessionLog) => (l.data?.kind === 'run' ? (l.data.intervals ?? []).filter((x) => x.meters > 20).map((x) => ({ ...x, pace: x.seconds / (x.meters / 1000) })) : []);
+const avgPace = (r: { meters: number; seconds: number }[]) => r.reduce((a, x) => a + x.seconds, 0) / (r.reduce((a, x) => a + x.meters, 0) / 1000);
 
 /** Everything the summary says, as plain data (tested). */
 export function summarizeRun(log: SessionLog, prev: SessionLog[]): RunSummaryData {
@@ -54,9 +61,31 @@ export function summarizeRun(log: SessionLog, prev: SessionLog[]): RunSummaryDat
     }
   }
 
-  // Compared with earlier runs
+  // Interval and tempo sessions: the hard parts are what counts – their pace, how even, and against last time.
+  const reps = QUALITY.includes(log.type) ? repsOf(log) : [];
+  const repPace = reps.length ? avgPace(reps) : undefined;
+  if (repPace) {
+    if (log.type === 'tempo' || reps.length === 1) {
+      lines.push(`Tempodelen: ${fmtPaceS(repPace)} /km i ${Math.round(reps.reduce((a, x) => a + x.seconds, 0) / 60)} minuter.`);
+    } else {
+      const fastestRep = reps.reduce((b, x, k) => (x.pace < reps[b].pace ? k : b), 0);
+      lines.push(`Snitt i intervallerna: ${fmtPaceS(repPace)} /km. Snabbast var nummer ${fastestRep + 1} (${fmtPaceS(reps[fastestRep].pace)}).`);
+      const first = reps[0].pace, lastRep = reps[reps.length - 1].pace;
+      const spread = (Math.max(...reps.map((x) => x.pace)) - Math.min(...reps.map((x) => x.pace))) / Math.min(...reps.map((x) => x.pace));
+      if (spread <= 0.03) { lines.push('Jämna intervaller hela vägen – precis så ska det vara.'); if (!recs.length) headline = 'Jämnt och starkt!'; }
+      else if (lastRep > first * 1.05) lines.push(`Du tappade mot slutet (första ${fmtPaceS(first)}, sista ${fmtPaceS(lastRep)}). Börja lite lugnare nästa gång så orkar du hålla farten i alla.`);
+      else if (lastRep < first) { lines.push('Starkt avslut – sista intervallen var snabbare än den första.'); if (!recs.length) headline = 'Starkt avslut!'; }
+    }
+    const prevSame = before.find((l) => l.type === log.type && repsOf(l).length);
+    if (prevSame) {
+      const diff = Math.round(avgPace(repsOf(prevSame)) - repPace);
+      lines.push(Math.abs(diff) >= 3 ? `${Math.abs(diff)} s/km ${diff > 0 ? 'snabbare' : 'långsammare'} i de hårda delarna än förra ${log.type === 'tempo' ? 'tempopasset' : 'intervallpasset'}.` : `Samma fart i de hårda delarna som förra ${log.type === 'tempo' ? 'tempopasset' : 'intervallpasset'}.`);
+    }
+  }
+
+  // Compared with earlier runs (not for interval sessions – the average there mixes warm-up, jogs and hard parts)
   const last = withKm[0];
-  if (p && last) {
+  if (p && last && !repPace) {
     const diff = Math.round(pace(last) - p);
     if (Math.abs(diff) >= 5) lines.push(`${Math.abs(diff)} s/km ${diff > 0 ? 'snabbare' : 'långsammare'} än förra rundan med distans${diff < 0 && (log.type === 'easy' || log.type === 'long') ? ' – på ett lugnt pass är det bara bra' : ''}.`);
     else lines.push('Samma tempo som förra rundan – jämnt och fint.');
@@ -70,7 +99,7 @@ export function summarizeRun(log: SessionLog, prev: SessionLog[]): RunSummaryDat
   if (weekRuns >= 2) lines.push(`Löppass nummer ${weekRuns} de senaste sju dagarna.`);
   if (!lines.length) lines.push('Varje runda bygger grunden. Nästa gång blir lite lättare.');
 
-  return { headline, lines, distance: dist || undefined, pace: p, zone, splits: d?.splits };
+  return { headline, lines, distance: dist || undefined, pace: p, zone, splits: repPace ? undefined : d?.splits, reps: reps.length ? reps : undefined, repPace };
 }
 
 export function RunSummary({ log, prev }: { log: SessionLog; prev: SessionLog[] }) {
@@ -85,7 +114,7 @@ export function RunSummary({ log, prev }: { log: SessionLog; prev: SessionLog[] 
       <div className="num mt-3 grid grid-cols-3 gap-2">
         <div><div className="text-[24px] font-semibold leading-none">{s.distance ? fmtKm(s.distance) : '–'}</div><div className="text-[12px] text-ink2">km</div></div>
         <div><div className="text-[24px] font-semibold leading-none">{log.minutes}</div><div className="text-[12px] text-ink2">min</div></div>
-        <div><div className="text-[24px] font-semibold leading-none">{s.pace ? fmtPaceS(s.pace) : '–'}</div><div className="text-[12px] text-ink2">min/km</div></div>
+        <div><div className="text-[24px] font-semibold leading-none">{s.repPace ? fmtPaceS(s.repPace) : s.pace ? fmtPaceS(s.pace) : '–'}</div><div className="text-[12px] text-ink2">{s.repPace ? (log.type === 'tempo' ? 'tempo, min/km' : 'intervaller, min/km') : 'min/km'}</div></div>
       </div>
       {s.zone && (
         <div className="mt-4">
@@ -100,6 +129,24 @@ export function RunSummary({ log, prev }: { log: SessionLog; prev: SessionLog[] 
       <ul className="mt-4 space-y-2">
         {s.lines.map((t, i) => <li key={i} className="text-[15px] leading-snug">{t}</li>)}
       </ul>
+      {s.reps && s.reps.length > 1 && (() => {
+        const fast = Math.min(...s.reps.map((x) => x.pace)), slow = Math.max(...s.reps.map((x) => x.pace));
+        return (
+          <div className="mt-4">
+            <div className="text-[13px] font-medium text-ink2">Intervaller</div>
+            <ol className="mt-1">
+              {s.reps.map((x, k) => (
+                <li key={k} className="num flex items-center gap-3 py-0.5 text-[14px]">
+                  <span className="w-8 text-ink2">{k + 1}</span>
+                  <span className="w-16 text-ink2">{Math.round(x.meters)} m</span>
+                  <span className="h-2 rounded-full" style={{ width: `${20 + (slow > fast ? ((slow - x.pace) / (slow - fast)) * 45 : 22)}%`, background: x.pace === fast ? run : color('run', 0.35) }} />
+                  <span className={x.pace === fast ? 'font-semibold' : ''}>{fmtPaceS(x.pace)}</span>
+                </li>
+              ))}
+            </ol>
+          </div>
+        );
+      })()}
       {s.splits && s.splits.length > 1 && (
         <div className="mt-4">
           <div className="text-[13px] font-medium text-ink2">Kilometertider</div>

@@ -349,3 +349,24 @@ describe('Sammanfattning efter löprundan', () => {
     expect(s.lines.join(' ')).toMatch(/30 s\/km långsammare än förra rundan/);
   });
 });
+
+describe('Efter dagens pass och intervaller', () => {
+  it('dagen är klar efter ett hårt löppass – och 24-timmarsregeln visas inte om dagens eget pass', () => {
+    const today: SessionLog = { id: 'r', module: 'run', type: 'intervals', title: 'Intervaller', startedAt: '2026-11-22T08:00:00', minutes: 40, data: { kind: 'run' } };
+    const v = coach(ctx([today]), MODULE_LIST);
+    expect(v.doneToday.map((l) => l.id)).toEqual(['r']);
+    expect(v.notes.some((n) => /24 timmar/.test(n.text))).toBe(false);
+    expect(v.notes[0].text).toMatch(/gjort/);
+  });
+
+  it('intervallpass visar intervalltider i stället för kilometertider', () => {
+    const l = (id: string, day: number, ints: [number, number][]): SessionLog => ({ id, module: 'run', type: 'intervals', title: 'Intervaller', startedAt: new Date(2026, 10, day, 8).toISOString(), minutes: 40,
+      data: { kind: 'run', distanceKm: 6, splits: [330, 300, 320], intervals: ints.map(([seconds, meters]) => ({ seconds, meters })) } });
+    const s = summarizeRun(l('b', 20, [[180, 750], [180, 760], [180, 755]]), [l('a', 13, [[180, 720], [180, 720], [180, 720]])]);
+    expect(s.reps?.length).toBe(3);
+    expect(s.splits).toBeUndefined();
+    expect(s.lines.join(' ')).toMatch(/Snitt i intervallerna/);
+    expect(s.lines.join(' ')).toMatch(/Jämna intervaller/);
+    expect(s.lines.join(' ')).toMatch(/snabbare i de hårda delarna/);
+  });
+});
